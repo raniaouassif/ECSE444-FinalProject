@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stm32l4s5i_iot01_qspi.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +51,11 @@ OSPI_HandleTypeDef hospi1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
+#define SEQUENCE_LENGTH 60000
+int32_t SEQUENCE[SEQUENCE_LENGTH];
+int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
+int32_t BUFFER[SEQUENCE_LENGTH];
+uint32_t PLAY[SEQUENCE_LENGTH];
 
 /* USER CODE END PV */
 
@@ -105,6 +110,30 @@ int main(void)
   MX_DFSDM1_Init();
   MX_OCTOSPI1_Init();
   /* USER CODE BEGIN 2 */
+
+  BSP_QSPI_Init();
+
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
+	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x010000) != QSPI_OK)
+  	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x020000) != QSPI_OK)
+  	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x030000) != QSPI_OK)
+  	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x040000) != QSPI_OK)
+  	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x050000) != QSPI_OK)
+  	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x060000) != QSPI_OK)
+	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x070000) != QSPI_OK)
+	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x080000) != QSPI_OK)
+	  Error_Handler();
+  if(BSP_QSPI_Erase_Block((uint32_t) 0x090000) != QSPI_OK)
+	  Error_Handler();
+
 
   /* USER CODE END 2 */
 
@@ -423,7 +452,34 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if(GPIO_Pin == pushButton_Pin) {
+		HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
+		if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
+			Error_Handler();
 
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
+			Error_Handler();
+	}
+}
+
+void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
+
+	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
+	for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
+		BUFFER[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
+		if(BUFFER[i] < 0 ) {
+			BUFFER[i]+= (1<<24);
+		}
+		if( BUFFER[i] >= 4096) {
+			PLAY[i] = BUFFER[i] >> 12;
+		} else {
+			PLAY[i] = BUFFER[i];
+		}
+	}
+	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) PLAY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+}
 /* USER CODE END 4 */
 
 /**
@@ -434,10 +490,9 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	HAL_GPIO_WritePin(redLED_GPIO_Port, redLED_Pin, GPIO_PIN_RESET);
+	__BKPT();
+
   /* USER CODE END Error_Handler_Debug */
 }
 
