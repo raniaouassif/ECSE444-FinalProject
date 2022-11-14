@@ -51,11 +51,11 @@ OSPI_HandleTypeDef hospi1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-#define SEQUENCE_LENGTH 60000
+#define SEQUENCE_LENGTH 30000
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
-int32_t BUFFER[SEQUENCE_LENGTH];
-uint32_t PLAY[SEQUENCE_LENGTH];
+//int32_t BUFFER[SEQUENCE_LENGTH];
+//uint32_t PLAY[SEQUENCE_LENGTH];
 
 /* USER CODE END PV */
 
@@ -112,27 +112,27 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   BSP_QSPI_Init();
-
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
-	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x010000) != QSPI_OK)
-  	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x020000) != QSPI_OK)
-  	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x030000) != QSPI_OK)
-  	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x040000) != QSPI_OK)
-  	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x050000) != QSPI_OK)
-  	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x060000) != QSPI_OK)
-	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x070000) != QSPI_OK)
-	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x080000) != QSPI_OK)
-	  Error_Handler();
-  if(BSP_QSPI_Erase_Block((uint32_t) 0x090000) != QSPI_OK)
-	  Error_Handler();
+//
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
+//	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x010000) != QSPI_OK)
+//  	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x020000) != QSPI_OK)
+//  	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x030000) != QSPI_OK)
+//  	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x040000) != QSPI_OK)
+//  	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x050000) != QSPI_OK)
+//  	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x060000) != QSPI_OK)
+//	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x070000) != QSPI_OK)
+//	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x080000) != QSPI_OK)
+//	  Error_Handler();
+//  if(BSP_QSPI_Erase_Block((uint32_t) 0x090000) != QSPI_OK)
+//	  Error_Handler();
 
 
   /* USER CODE END 2 */
@@ -159,7 +159,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -174,7 +174,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 60;
+  RCC_OscInitStruct.PLL.PLLN = 40;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -192,7 +192,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -261,7 +261,7 @@ static void MX_DFSDM1_Init(void)
   hdfsdm1_filter0.Init.RegularParam.Trigger = DFSDM_FILTER_SW_TRIGGER;
   hdfsdm1_filter0.Init.RegularParam.FastMode = ENABLE;
   hdfsdm1_filter0.Init.RegularParam.DmaMode = ENABLE;
-  hdfsdm1_filter0.Init.FilterParam.SincOrder = DFSDM_FILTER_SINC3_ORDER;
+  hdfsdm1_filter0.Init.FilterParam.SincOrder = DFSDM_FILTER_SINC2_ORDER;
   hdfsdm1_filter0.Init.FilterParam.Oversampling = 240;
   hdfsdm1_filter0.Init.FilterParam.IntOversampling = 1;
   if (HAL_DFSDM_FilterInit(&hdfsdm1_filter0) != HAL_OK)
@@ -449,6 +449,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(greenLED_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -456,29 +460,29 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if(GPIO_Pin == pushButton_Pin) {
 		HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
-		if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
-			Error_Handler();
-
-		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
-			Error_Handler();
 	}
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
 
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
+
 	for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
-		BUFFER[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
-		if(BUFFER[i] < 0 ) {
-			BUFFER[i]+= (1<<24);
+		SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
+		if(SEQUENCE[i] < 0 ) {
+			SEQUENCE[i]= SEQUENCE[i]+ (1<<24);
 		}
-		if( BUFFER[i] >= 4096) {
-			PLAY[i] = BUFFER[i] >> 12;
-		} else {
-			PLAY[i] = BUFFER[i];
+		if( SEQUENCE[i] >= 4096) {
+			SEQUENCE[i] = SEQUENCE[i] >> 12;
 		}
 	}
-	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) PLAY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+//	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
+//				Error_Handler();
+
+//	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  0x000000, sizeof(SEQUENCE)) != QSPI_OK)
+//					Error_Handler();
+	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+
 }
 /* USER CODE END 4 */
 
