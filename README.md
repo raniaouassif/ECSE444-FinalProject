@@ -1,4 +1,4 @@
-# ECSE444- Microcontroller Course
+# ECSE444- Microprocessors
 ### Final Project 
 
 Team members : 
@@ -8,6 +8,7 @@ Team members :
 - Louis Lintzeris
 
 In the final project of the semester, our group will use the B-L475EIOT01A to build an interactive application that combines the features explored in the earlier labs.
+## Features
  - DAC Speaker, 
  - DFSDM Microphone,
  - QSPI Flash, 
