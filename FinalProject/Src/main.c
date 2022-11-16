@@ -478,24 +478,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		if(recorder)
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
-
 		if(player) {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-
-
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			pushButtonCounter = (pushButtonCounter + 1) % 3;
-
 		}
-
-
 	}
 }
-// first press : 1st recording (no speaker)
-// second press : 2nd recording (no speaker)
-// 3rd press : speaker output 1st recording
-// 4rth press : speaker output 2nd recording
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
 
