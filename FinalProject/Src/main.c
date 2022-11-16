@@ -480,21 +480,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 
 		if(player) {
-			if(pushButtonCounter == 0) {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[0], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
-			if(pushButtonCounter == 1) {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[1], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
-			if(pushButtonCounter == 2) {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[2], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
+
+
 			pushButtonCounter = (pushButtonCounter + 1) % 3;
 
 		}
