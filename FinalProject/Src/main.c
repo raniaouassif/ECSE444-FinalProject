@@ -112,6 +112,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   BSP_QSPI_Init();
+  HAL_TIM_Base_Start_IT(&htim2);
+
 //
 //  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
 //	  Error_Handler();
