@@ -65,7 +65,8 @@ uint32_t test;
 uint32_t indexSeq;
 uint32_t addr = 0x000000;
 uint8_t seq[5] = {4,1,4,7,9};
-int j;
+uint32_t pressed = 0;
+uint8_t j = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -130,6 +131,7 @@ int main(void)
 		  addr = 0x010000*i;
 	  }
   }
+
 
   /* USER CODE END 2 */
 
@@ -452,6 +454,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if(GPIO_Pin == pushButton_Pin) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
@@ -461,26 +464,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
 		if(player) {
-			j =0 ;
-			while(j < sizeof(seq)) {
-
-
+				test = address[seq[j]];
 				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[j]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
-				HAL_Delay(2000);
-
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-				j++;
-			}
-//			for(int j = 0; j < sizeof(seq) ; j++) {
-//
-//				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[j]], sizeof(SEQUENCE)) != QSPI_OK)
-//					Error_Handler();
-//				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-//				HAL_Delay(1000);
-//			}
+
 		}
 	}
+}
+
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+
+	if(player) {
+	j = j + 1;
+	test = address[seq[j]];
+	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[j]], sizeof(SEQUENCE)) != QSPI_OK)
+		Error_Handler();
+
+	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+
+	if (j == 4) {
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	}
+	}
+
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
