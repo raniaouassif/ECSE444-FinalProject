@@ -8,4 +8,4 @@
 ../Src/main.c:482:13:MX_GPIO_Init	48	static
 ../Src/main.c:525:6:HAL_GPIO_EXTI_Callback	24	static
 ../Src/main.c:542:6:HAL_DFSDM_FilterRegConvCpltCallback	32	static
-../Src/main.c:569:6:Error_Handler	8	static,ignoring_inline_asm
+../Src/main.c:570:6:Error_Handler	8	static,ignoring_inline_asm

@@ -3325,7 +3325,6 @@ Discarded input sections
  .text          0x0000000000000000        0x0 ./Src/main.o
  .data          0x0000000000000000        0x0 ./Src/main.o
  .bss           0x0000000000000000        0x0 ./Src/main.o
- .data.seq1     0x0000000000000000       0x14 ./Src/main.o
  .debug_macro   0x0000000000000000      0xa78 ./Src/main.o
  .debug_macro   0x0000000000000000      0x1b9 ./Src/main.o
  .debug_macro   0x0000000000000000       0x2e ./Src/main.o
@@ -4829,7 +4828,7 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
 LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.macos64_1.0.0.202111181127/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libm.a
 LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.macos64_1.0.0.202111181127/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/libgcc.a
 
-.debug_info     0x0000000000000000    0x15058
+.debug_info     0x0000000000000000    0x15036
  .debug_info    0x0000000000000000      0xb99 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o
  .debug_info    0x0000000000000b99      0xe3f ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.o
  .debug_info    0x00000000000019d8      0xc5b ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac.o
@@ -4843,12 +4842,12 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
  .debug_info    0x0000000000009080     0x11f3 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc_ex.o
  .debug_info    0x000000000000a273     0x2e1e ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.o
  .debug_info    0x000000000000d091     0x1905 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.o
- .debug_info    0x000000000000e996     0x22dd ./Src/main.o
- .debug_info    0x0000000000010c73     0x14ff ./Src/stm32l4s5i_iot01_qspi.o
- .debug_info    0x0000000000012172     0x1fbc ./Src/stm32l4xx_hal_msp.o
- .debug_info    0x000000000001412e      0x90a ./Src/stm32l4xx_it.o
- .debug_info    0x0000000000014a38      0x5fe ./Src/system_stm32l4xx.o
- .debug_info    0x0000000000015036       0x22 ./Startup/startup_stm32l4s5vitx.o
+ .debug_info    0x000000000000e996     0x22bb ./Src/main.o
+ .debug_info    0x0000000000010c51     0x14ff ./Src/stm32l4s5i_iot01_qspi.o
+ .debug_info    0x0000000000012150     0x1fbc ./Src/stm32l4xx_hal_msp.o
+ .debug_info    0x000000000001410c      0x90a ./Src/stm32l4xx_it.o
+ .debug_info    0x0000000000014a16      0x5fe ./Src/system_stm32l4xx.o
+ .debug_info    0x0000000000015014       0x22 ./Startup/startup_stm32l4s5vitx.o
 
 .debug_abbrev   0x0000000000000000     0x2990
  .debug_abbrev  0x0000000000000000      0x23a ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o
@@ -5022,7 +5021,7 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
  .debug_line    0x0000000000013e9e      0x80c ./Src/system_stm32l4xx.o
  .debug_line    0x00000000000146aa       0x83 ./Startup/startup_stm32l4s5vitx.o
 
-.debug_str      0x0000000000000000   0x10afee
+.debug_str      0x0000000000000000   0x10afe9
  .debug_str     0x0000000000000000   0x104bf4 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o
                                      0x10505c (size before relaxing)
  .debug_str     0x0000000000104bf4      0x3a2 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.o
@@ -5049,17 +5048,17 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
                                      0x10588a (size before relaxing)
  .debug_str     0x0000000000109ab2      0x604 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.o
                                      0x1051ae (size before relaxing)
- .debug_str     0x000000000010a0b6      0xa6c ./Src/main.o
-                                     0x10677b (size before relaxing)
- .debug_str     0x000000000010ab22      0x2bc ./Src/stm32l4s5i_iot01_qspi.o
+ .debug_str     0x000000000010a0b6      0xa67 ./Src/main.o
+                                     0x106776 (size before relaxing)
+ .debug_str     0x000000000010ab1d      0x2bc ./Src/stm32l4s5i_iot01_qspi.o
                                      0x10564b (size before relaxing)
- .debug_str     0x000000000010adde       0x40 ./Src/stm32l4xx_hal_msp.o
+ .debug_str     0x000000000010add9       0x40 ./Src/stm32l4xx_hal_msp.o
                                      0x105cf9 (size before relaxing)
- .debug_str     0x000000000010ae1e      0x10f ./Src/stm32l4xx_it.o
+ .debug_str     0x000000000010ae19      0x10f ./Src/stm32l4xx_it.o
                                      0x104a61 (size before relaxing)
- .debug_str     0x000000000010af2d       0x3b ./Src/system_stm32l4xx.o
+ .debug_str     0x000000000010af28       0x3b ./Src/system_stm32l4xx.o
                                      0x104479 (size before relaxing)
- .debug_str     0x000000000010af68       0x86 ./Startup/startup_stm32l4s5vitx.o
+ .debug_str     0x000000000010af63       0x86 ./Startup/startup_stm32l4s5vitx.o
 
 .comment        0x0000000000000000       0x50
  .comment       0x0000000000000000       0x50 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o

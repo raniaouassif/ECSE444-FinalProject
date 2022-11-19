@@ -27,23 +27,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  00020038  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00015058  00000000  00000000  00020068  2**0
+ 12 .debug_info   00015036  00000000  00000000  00020068  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 00002990  00000000  00000000  000350c0  2**0
+ 13 .debug_abbrev 00002990  00000000  00000000  0003509e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00001318  00000000  00000000  00037a50  2**3
+ 14 .debug_aranges 00001318  00000000  00000000  00037a30  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_ranges 000011f0  00000000  00000000  00038d68  2**3
+ 15 .debug_ranges 000011f0  00000000  00000000  00038d48  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  0002b0e4  00000000  00000000  00039f58  2**0
+ 16 .debug_macro  0002b0e4  00000000  00000000  00039f38  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0001472d  00000000  00000000  0006503c  2**0
+ 17 .debug_line   0001472d  00000000  00000000  0006501c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0010afee  00000000  00000000  00079769  2**0
+ 18 .debug_str    0010afe9  00000000  00000000  00079749  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000050  00000000  00000000  00184757  2**0
+ 19 .comment      00000050  00000000  00000000  00184732  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000050dc  00000000  00000000  001847a8  2**2
+ 20 .debug_frame  000050dc  00000000  00000000  00184784  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -15812,8 +15812,7 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
  80059c8:	d9ce      	bls.n	8005968 <HAL_DFSDM_FilterRegConvCpltCallback+0x14>
 		}
 	}
-
-	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t)  address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
+	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
  80059ca:	4b1e      	ldr	r3, [pc, #120]	; (8005a44 <HAL_DFSDM_FilterRegConvCpltCallback+0xf0>)
  80059cc:	681b      	ldr	r3, [r3, #0]
  80059ce:	4a1e      	ldr	r2, [pc, #120]	; (8005a48 <HAL_DFSDM_FilterRegConvCpltCallback+0xf4>)
@@ -15825,9 +15824,10 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
  80059de:	4603      	mov	r3, r0
  80059e0:	2b00      	cmp	r3, #0
  80059e2:	d001      	beq.n	80059e8 <HAL_DFSDM_FilterRegConvCpltCallback+0x94>
-				Error_Handler();
+		Error_Handler();
  80059e4:	f000 f83a 	bl	8005a5c <Error_Handler>
-	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
+	}
+	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
  80059e8:	4b16      	ldr	r3, [pc, #88]	; (8005a44 <HAL_DFSDM_FilterRegConvCpltCallback+0xf0>)
  80059ea:	681b      	ldr	r3, [r3, #0]
  80059ec:	4a16      	ldr	r2, [pc, #88]	; (8005a48 <HAL_DFSDM_FilterRegConvCpltCallback+0xf4>)
@@ -15839,8 +15839,9 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
  80059fc:	4603      	mov	r3, r0
  80059fe:	2b00      	cmp	r3, #0
  8005a00:	d001      	beq.n	8005a06 <HAL_DFSDM_FilterRegConvCpltCallback+0xb2>
-				Error_Handler();
+		Error_Handler();
  8005a02:	f000 f82b 	bl	8005a5c <Error_Handler>
+	}
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
  8005a06:	2300      	movs	r3, #0
  8005a08:	9300      	str	r3, [sp, #0]
@@ -17646,9 +17647,9 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
  80063e2:	4b10      	ldr	r3, [pc, #64]	; (8006424 <HAL_DAC_MspInit+0xd4>)
  80063e4:	f44f 6200 	mov.w	r2, #2048	; 0x800
  80063e8:	619a      	str	r2, [r3, #24]
-    hdma_dac1_ch1.Init.Mode = DMA_NORMAL;
+    hdma_dac1_ch1.Init.Mode = DMA_CIRCULAR;
  80063ea:	4b0e      	ldr	r3, [pc, #56]	; (8006424 <HAL_DAC_MspInit+0xd4>)
- 80063ec:	2200      	movs	r2, #0
+ 80063ec:	2220      	movs	r2, #32
  80063ee:	61da      	str	r2, [r3, #28]
     hdma_dac1_ch1.Init.Priority = DMA_PRIORITY_LOW;
  80063f0:	4b0c      	ldr	r3, [pc, #48]	; (8006424 <HAL_DAC_MspInit+0xd4>)
