@@ -10230,10 +10230,10 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
  80057ca:	480e      	ldr	r0, [pc, #56]	; (8005804 <HAL_DAC_ConvCpltCallbackCh1+0xa0>)
  80057cc:	f7fa fee2 	bl	8000594 <HAL_DAC_Start_DMA>
 
-	if (j == 4) {
+	if (j == 5) {
  80057d0:	4b06      	ldr	r3, [pc, #24]	; (80057ec <HAL_DAC_ConvCpltCallbackCh1+0x88>)
  80057d2:	781b      	ldrb	r3, [r3, #0]
- 80057d4:	2b04      	cmp	r3, #4
+ 80057d4:	2b05      	cmp	r3, #5
  80057d6:	d103      	bne.n	80057e0 <HAL_DAC_ConvCpltCallbackCh1+0x7c>
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
  80057d8:	2100      	movs	r1, #0

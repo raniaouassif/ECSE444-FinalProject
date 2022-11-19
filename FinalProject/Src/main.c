@@ -483,7 +483,7 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-	if (j == 4) {
+	if (j == 5) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	}
 	}
