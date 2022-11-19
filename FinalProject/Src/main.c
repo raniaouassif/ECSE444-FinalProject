@@ -62,6 +62,8 @@ uint32_t pushButtonCounter = 0;
 uint8_t recorder = 1;
 uint8_t player = 0;
 
+uint32_t addr = 0x000000;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,86 +122,13 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
 
   if(recorder) {
-	  // 1st Recording : Digit 0
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x010000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x020000) != QSPI_OK)
-		  Error_Handler();
-
-	  // 2st Recording : Digit 1
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x030000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x040000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x050000) != QSPI_OK)
-		  Error_Handler();
-
-	  // 3rd Recording : Digit 2
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x060000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x070000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x080000) != QSPI_OK)
-		  Error_Handler();
-
-	  // 4th Recording : Digit 3
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x090000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0A0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0B0000) != QSPI_OK)
-		  Error_Handler();
-
-	  // 5th Recording : Digit 4
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0C0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0D0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0E0000) != QSPI_OK)
-		  Error_Handler();
-
-	  // 6th Recording : Digit 5
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x0F0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x100000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x110000) != QSPI_OK)
-	  	  Error_Handler();
-
-	  // 7th Recording : Digit 6
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x120000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x130000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x140000) != QSPI_OK)
-	  	  Error_Handler();
-
-	  // 8th Recording : Digit 7
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x150000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x160000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x170000) != QSPI_OK)
-	  	  Error_Handler();
-
-	  // 9th Recording : Digit 8
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x180000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x190000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x1A0000) != QSPI_OK)
-	  	  Error_Handler();
-
-	  // 10th Recording : Digit 9
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x1B0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x1C0000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x1D0000) != QSPI_OK)
-	  	  Error_Handler();
+	  for(int i = 1; i < 30; i++) {
+		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
+		  	Error_Handler();
+		  addr = 0x010000*i;
+	  }
   }
+
 
   /* USER CODE END 2 */
 
