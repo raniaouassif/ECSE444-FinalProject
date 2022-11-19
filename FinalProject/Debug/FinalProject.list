@@ -27,23 +27,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  00020038  2**0
                   CONTENTS, READONLY
- 12 .debug_info   0001505d  00000000  00000000  00020068  2**0
+ 12 .debug_info   0001507f  00000000  00000000  00020068  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000029bb  00000000  00000000  000350c5  2**0
+ 13 .debug_abbrev 000029ce  00000000  00000000  000350e7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00001318  00000000  00000000  00037a80  2**3
+ 14 .debug_aranges 00001318  00000000  00000000  00037ab8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_ranges 000011f0  00000000  00000000  00038d98  2**3
+ 15 .debug_ranges 000011f0  00000000  00000000  00038dd0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  0002b0e4  00000000  00000000  00039f88  2**0
+ 16 .debug_macro  0002b0e4  00000000  00000000  00039fc0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00014654  00000000  00000000  0006506c  2**0
+ 17 .debug_line   00014654  00000000  00000000  000650a4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0010afad  00000000  00000000  000796c0  2**0
+ 18 .debug_str    0010afe9  00000000  00000000  000796f8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000050  00000000  00000000  0018466d  2**0
+ 19 .comment      00000050  00000000  00000000  001846e1  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000050e0  00000000  00000000  001846c0  2**2
+ 20 .debug_frame  000050e0  00000000  00000000  00184734  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -14623,7 +14623,7 @@ int main(void)
  8005210:	e7fe      	b.n	8005210 <main+0x68>
  8005212:	bf00      	nop
  8005214:	2000022c 	.word	0x2000022c
- 8005218:	20000030 	.word	0x20000030
+ 8005218:	2004e47c 	.word	0x2004e47c
  800521c:	2004e480 	.word	0x2004e480
 
 08005220 <SystemClock_Config>:
@@ -15466,7 +15466,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
  80056ea:	781b      	ldrb	r3, [r3, #0]
  80056ec:	2b00      	cmp	r3, #0
  80056ee:	d025      	beq.n	800573c <HAL_GPIO_EXTI_Callback+0x8c>
-			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
+//					Error_Handler();
+//				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+//				delay(10);
+//			}
+
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
  80056f0:	4b1a      	ldr	r3, [pc, #104]	; (800575c <HAL_GPIO_EXTI_Callback+0xac>)
  80056f2:	681b      	ldr	r3, [r3, #0]
  80056f4:	4a1a      	ldr	r2, [pc, #104]	; (8005760 <HAL_GPIO_EXTI_Callback+0xb0>)
@@ -15511,10 +15516,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
  8005742:	bd80      	pop	{r7, pc}
  8005744:	2000007c 	.word	0x2000007c
  8005748:	48000400 	.word	0x48000400
- 800574c:	20000030 	.word	0x20000030
+ 800574c:	2004e47c 	.word	0x2004e47c
  8005750:	20000278 	.word	0x20000278
  8005754:	200000f0 	.word	0x200000f0
- 8005758:	2004e47c 	.word	0x2004e47c
+ 8005758:	20000030 	.word	0x20000030
  800575c:	2004e478 	.word	0x2004e478
  8005760:	20000008 	.word	0x20000008
  8005764:	00027100 	.word	0x00027100
@@ -17418,9 +17423,9 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
  80061fe:	4b10      	ldr	r3, [pc, #64]	; (8006240 <HAL_DAC_MspInit+0xd4>)
  8006200:	f44f 6200 	mov.w	r2, #2048	; 0x800
  8006204:	619a      	str	r2, [r3, #24]
-    hdma_dac1_ch1.Init.Mode = DMA_CIRCULAR;
+    hdma_dac1_ch1.Init.Mode = DMA_NORMAL;
  8006206:	4b0e      	ldr	r3, [pc, #56]	; (8006240 <HAL_DAC_MspInit+0xd4>)
- 8006208:	2220      	movs	r2, #32
+ 8006208:	2200      	movs	r2, #0
  800620a:	61da      	str	r2, [r3, #28]
     hdma_dac1_ch1.Init.Priority = DMA_PRIORITY_LOW;
  800620c:	4b0c      	ldr	r3, [pc, #48]	; (8006240 <HAL_DAC_MspInit+0xd4>)
@@ -18329,108 +18334,48 @@ void SystemInit(void)
  80066a8:	e000ed00 	.word	0xe000ed00
 
 080066ac <Reset_Handler>:
-
-    .section	.text.Reset_Handler
-	.weak	Reset_Handler
-	.type	Reset_Handler, %function
-Reset_Handler:
-  ldr   sp, =_estack    /* Set stack pointer */
  80066ac:	f8df d034 	ldr.w	sp, [pc, #52]	; 80066e4 <LoopForever+0x2>
-
-/* Call the clock system initialization function.*/
-    bl  SystemInit
  80066b0:	f7ff ffea 	bl	8006688 <SystemInit>
-
-/* Copy the data segment initializers from flash to SRAM */
-  ldr r0, =_sdata
  80066b4:	480c      	ldr	r0, [pc, #48]	; (80066e8 <LoopForever+0x6>)
-  ldr r1, =_edata
  80066b6:	490d      	ldr	r1, [pc, #52]	; (80066ec <LoopForever+0xa>)
-  ldr r2, =_sidata
  80066b8:	4a0d      	ldr	r2, [pc, #52]	; (80066f0 <LoopForever+0xe>)
-  movs r3, #0
  80066ba:	2300      	movs	r3, #0
-  b LoopCopyDataInit
  80066bc:	e002      	b.n	80066c4 <LoopCopyDataInit>
 
 080066be <CopyDataInit>:
-
-CopyDataInit:
-  ldr r4, [r2, r3]
  80066be:	58d4      	ldr	r4, [r2, r3]
-  str r4, [r0, r3]
  80066c0:	50c4      	str	r4, [r0, r3]
-  adds r3, r3, #4
  80066c2:	3304      	adds	r3, #4
 
 080066c4 <LoopCopyDataInit>:
-
-LoopCopyDataInit:
-  adds r4, r0, r3
  80066c4:	18c4      	adds	r4, r0, r3
-  cmp r4, r1
  80066c6:	428c      	cmp	r4, r1
-  bcc CopyDataInit
  80066c8:	d3f9      	bcc.n	80066be <CopyDataInit>
-  
-/* Zero fill the bss segment. */
-  ldr r2, =_sbss
  80066ca:	4a0a      	ldr	r2, [pc, #40]	; (80066f4 <LoopForever+0x12>)
-  ldr r4, =_ebss
  80066cc:	4c0a      	ldr	r4, [pc, #40]	; (80066f8 <LoopForever+0x16>)
-  movs r3, #0
  80066ce:	2300      	movs	r3, #0
-  b LoopFillZerobss
  80066d0:	e001      	b.n	80066d6 <LoopFillZerobss>
 
 080066d2 <FillZerobss>:
-
-FillZerobss:
-  str  r3, [r2]
  80066d2:	6013      	str	r3, [r2, #0]
-  adds r2, r2, #4
  80066d4:	3204      	adds	r2, #4
 
 080066d6 <LoopFillZerobss>:
-
-LoopFillZerobss:
-  cmp r2, r4
  80066d6:	42a2      	cmp	r2, r4
-  bcc FillZerobss
  80066d8:	d3fb      	bcc.n	80066d2 <FillZerobss>
-
-/* Call static constructors */
-    bl __libc_init_array
  80066da:	f000 f811 	bl	8006700 <__libc_init_array>
-/* Call the application's entry point.*/
-	bl	main
  80066de:	f7fe fd63 	bl	80051a8 <main>
 
 080066e2 <LoopForever>:
-
-LoopForever:
-    b LoopForever
  80066e2:	e7fe      	b.n	80066e2 <LoopForever>
-  ldr   sp, =_estack    /* Set stack pointer */
  80066e4:	200a0000 	.word	0x200a0000
-  ldr r0, =_sdata
  80066e8:	20000000 	.word	0x20000000
-  ldr r1, =_edata
  80066ec:	20000038 	.word	0x20000038
-  ldr r2, =_sidata
  80066f0:	080067b8 	.word	0x080067b8
-  ldr r2, =_sbss
  80066f4:	20000038 	.word	0x20000038
-  ldr r4, =_ebss
  80066f8:	2004e4dc 	.word	0x2004e4dc
 
 080066fc <ADC1_IRQHandler>:
- * @retval : None
-*/
-    .section	.text.Default_Handler,"ax",%progbits
-Default_Handler:
-Infinite_Loop:
-	b	Infinite_Loop
  80066fc:	e7fe      	b.n	80066fc <ADC1_IRQHandler>
 	...
 
