@@ -61,9 +61,11 @@ int32_t address[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F000
 uint32_t pushButtonCounter = 0;
 uint8_t recorder = 0;
 uint8_t player = 1;
-
+uint32_t test;
+uint32_t indexSeq;
+int i;
 uint32_t addr = 0x000000;
-uint8_t seq[5] = {5,1,4,7,0};
+uint8_t seq[5] = {4,1,4,7,0};
 
 /* USER CODE END PV */
 
@@ -97,7 +99,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+   HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -460,17 +462,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
 		if(player) {
-//			for(int i = 0; i < sizeof(seq) ; i++) {
-//				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[i]], sizeof(SEQUENCE)) != QSPI_OK)
-//					Error_Handler();
-//				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-//				delay(10);
-//			}
+//			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+//							Error_Handler();
+//			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
-				Error_Handler();
-			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			pushButtonCounter = (pushButtonCounter + 1) % 10;
+			for(i = 0; i < sizeof(seq) ; i++) {
+				indexSeq = seq[i];
+				indexSeq = seq[0];
+				test = address[seq[i]];
+				test = address[seq[0]];
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[i]], sizeof(SEQUENCE)) != QSPI_OK)
+					Error_Handler();
+				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+			}
+
+//			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
+//				Error_Handler();
+//			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+//			pushButtonCounter = (pushButtonCounter + 1) % 10;
 		}
 	}
 }
