@@ -159,6 +159,9 @@ int main(void)
   // Send start message of the game
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);
 
+  //wait until user enters desired game mode - polling manner (for this rendition)
+  while(rxdata[0] == '\000')
+	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);;
 
   //Choose the game mode
 
@@ -168,6 +171,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+  HAL_UART_Transmit(&huart1, roundLoss, sizeof(roundLoss), 100);
   HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
   if (rxdata[0] == '0'){
 	 HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
@@ -178,7 +182,7 @@ int main(void)
 
 	 HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);*/
 	 rxdata[0] = 'n';
-  }
+  }/*
   HAL_Delay(10000);
   HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
   if(answers[0] != '\000'){
