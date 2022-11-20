@@ -50,14 +50,44 @@ OSPI_HandleTypeDef hospi1;
 
 TIM_HandleTypeDef htim2;
 
+UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
+
 /* USER CODE BEGIN PV */
-#define SEQUENCE_LENGTH 60000
+// Sampling rate = 20 kHz, duration = 2s, -> 40 000 samples per audio
+// We have 10 audios, int = 4 bytes ->
+#define SEQUENCE_LENGTH 40000
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
-int32_t address[3] = {0x000000 , 0x040000, 0x080000};
+int32_t address[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
+
 uint32_t pushButtonCounter = 0;
 uint8_t recorder = 0;
 uint8_t player = 1;
+uint32_t test;
+uint32_t indexSeq;
+uint32_t addr = 0x000000;
+uint8_t seq[5] = {4,1,4,7,9};
+uint32_t pressed = 0;
+uint8_t j = 0;
+
+#define gameModes 2
+uint8_t answers[5];
+uint8_t wrongAnswer = 0;
+uint8_t timeout[1000] = "Sorry, you were too slow! \r\n"
+		               "Game over! \r\n";
+uint8_t roundWin[1000] = "You got it right! \r\n"
+        				 "On to the next level!";
+uint8_t roundLoss[1000] = "You got it wrong! \r\n"
+		                  "Game over!";
+uint8_t startMessage[1000] = "Let's Test Your Memory! \r\n"
+							"Choose The Game Mode: \r\n"
+							"0: Memory Digits \r\n"
+							"1: Memory Directions \r\n";
+char gameChosenMessage[2][100] ={"Starting Memory Digits..\r\n Listen for sounds!\r\n", "Starting Memory Directions.. \r\n"};
+uint8_t clearCommand[100] =  "\033[1J";
+uint8_t rxdata[30];
+uint8_t gameModeArr[gameModes] = {0, 1};
 
 /* USER CODE END PV */
 
@@ -69,6 +99,7 @@ static void MX_DAC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_DFSDM1_Init(void);
 static void MX_OCTOSPI1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,42 +142,25 @@ int main(void)
   MX_TIM2_Init();
   MX_DFSDM1_Init();
   MX_OCTOSPI1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 
   if(recorder) {
-	  // 1st Recording
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x000000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x010000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x020000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x030000) != QSPI_OK)
-		  Error_Handler();
+ 	  for(int i = 1; i < 30; i++) {
+ 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
+ 		  	Error_Handler();
+ 		  addr = 0x010000*i;
+ 	  }
+   }
 
-	  // 2nd Recording
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x040000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x050000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x060000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x070000) != QSPI_OK)
-		  Error_Handler();
+  // Send start message of the game
+  HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);
 
-	  // 3rd Recording
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x080000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x090000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x100000) != QSPI_OK)
-		  Error_Handler();
-	  if(BSP_QSPI_Erase_Block((uint32_t) 0x110000) != QSPI_OK)
-		  Error_Handler();
-  }
+
+  //Choose the game mode
 
   /* USER CODE END 2 */
 
@@ -154,6 +168,40 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
+  if (rxdata[0] == '0'){
+	 HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
+	 HAL_UART_Transmit(&huart1, gameChosenMessage[1], sizeof(gameChosenMessage[1]), 100);
+	 /*
+  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+	 		Error_Handler();
+
+	 HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);*/
+	 rxdata[0] = 'n';
+  }
+  HAL_Delay(10000);
+  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
+  if(answers[0] != '\000'){
+	  for (int i = 0 ; i < 5; i++) {
+	          if (seq[i] != answers[i]) {
+	        	  wrongAnswer++;
+	          }
+	  }
+	 if (wrongAnswer == 0){
+		 HAL_UART_Transmit(&huart1, roundWin, sizeof(roundWin), 100);
+		 wrongAnswer = 0;
+	 }
+
+	 else{
+		 HAL_UART_Transmit(&huart1, roundLoss, sizeof(roundLoss), 100);
+	 }
+
+
+  }/*
+  else{
+	  HAL_UART_Transmit(&huart1, timeout, sizeof(timeout), 100);
+  }
+*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -402,6 +450,54 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -418,6 +514,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -471,7 +570,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if(GPIO_Pin == pushButton_Pin) {
-
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 		HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 
@@ -479,13 +577,32 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
 		if(player) {
-			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
-				Error_Handler();
-			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			pushButtonCounter = (pushButtonCounter + 1) % 3;
+				test = address[seq[j]];
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  test, sizeof(SEQUENCE)) != QSPI_OK)
+					Error_Handler();
+				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+
 		}
 	}
 }
+
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+
+	if(player) {
+	j = j + 1;
+	test = address[seq[j]];
+	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  test, sizeof(SEQUENCE)) != QSPI_OK)
+		Error_Handler();
+
+	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+
+	if (j == 5) {
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	}
+	}
+
+}
+
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
 
@@ -499,13 +616,14 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 			SEQUENCE[i] = SEQUENCE[i] >> 12;
 		}
 	}
-
-	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t)  address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
-				Error_Handler();
-	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)   address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK)
-				Error_Handler();
+	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+		Error_Handler();
+	}
+	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+		Error_Handler();
+	}
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-	pushButtonCounter = (pushButtonCounter + 1) % 3;
+	pushButtonCounter = (pushButtonCounter + 1) % 10;
 
 }
 /* USER CODE END 4 */
