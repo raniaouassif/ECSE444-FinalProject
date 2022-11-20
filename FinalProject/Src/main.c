@@ -72,19 +72,27 @@ uint32_t pressed = 0;
 uint8_t j = 0;
 
 #define gameModes 2
+int timedelay = 10000;
+uint8_t charseq[5] = {'4','1','4','7', '9'};
 uint8_t answers[5];
 uint8_t wrongAnswer = 0;
 uint8_t timeout[1000] = "Sorry, you were too slow! \r\n"
 		               "Game over! \r\n";
 uint8_t roundWin[1000] = "You got it right! \r\n"
-        				 "On to the next level!";
+        				 "On to the next level! \r\n";
 uint8_t roundLoss[1000] = "You got it wrong! \r\n"
-		                  "Game over!";
+		                  "Game over!\r\n";
 uint8_t startMessage[1000] = "Let's Test Your Memory! \r\n"
-							"Choose The Game Mode: \r\n"
+							 "Have you played before?\r\n"
+							 "1: Yes \r\n"
+						   	 "0: No \r\n";
+uint8_t playerMessage[1000] = "Then, proceed to choose the game mode! \r\n";
+uint8_t recorderMessage[1000] = "Please press the blue button when ready \r\n"
+								"to start recording the numbers (0-9)";
+uint8_t chooseModeMessage[1000] = "Choose The Game Mode: \r\n"
 							"0: Memory Digits \r\n"
 							"1: Memory Directions \r\n";
-char gameChosenMessage[2][100] ={"Starting Memory Digits..\r\n Listen for sounds!\r\n", "Starting Memory Directions.. \r\n"};
+char gameChosenMessage[2][100] ={"Starting Memory Digits..\r\nListen for sounds!\r\n", "Starting Memory Directions.. \r\n"};
 uint8_t clearCommand[100] =  "\033[1J";
 uint8_t rxdata[30];
 uint8_t gameModeArr[gameModes] = {0, 1};
@@ -159,53 +167,76 @@ int main(void)
   // Send start message of the game
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);
 
-  //wait until user enters desired game mode - polling manner (for this rendition)
-  while(rxdata[0] == '\000')
-	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);;
-
   //Choose the game mode
+  //wait until user enters if they played before - polling manner (for this rendition)
+  while(rxdata[0] == '\000')
+	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
 
+  if (rxdata[0] == '0'){
+ 	 HAL_UART_Transmit(&huart1, recorderMessage, sizeof(recorderMessage), 100);
+ 	 recorder = 1;
+ 	 player = 0;
+   }
+  if (rxdata[0] == '1'){
+ 	 HAL_UART_Transmit(&huart1, playerMessage, sizeof(playerMessage), 100);
+ 	 recorder = 0;
+ 	 player = 1;
+ 	 rxdata[0] ='\000';
+   }
+
+  HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
+  while(rxdata[0] == '\000')
+ 	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
+
+  //Print starting message of memory game
+  if (rxdata[0] == '0'){
+	 HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
+	 HAL_UART_Transmit(&huart1, gameChosenMessage[0], sizeof(gameChosenMessage[0]), 100);
+  }
+  //Print starting message of direction game
+  if (rxdata[0] == '1'){
+	 HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
+	 HAL_UART_Transmit(&huart1, gameChosenMessage[1], sizeof(gameChosenMessage[1]), 100);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-  HAL_UART_Transmit(&huart1, roundLoss, sizeof(roundLoss), 100);
-  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
-  if (rxdata[0] == '0'){
-	 HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
-	 HAL_UART_Transmit(&huart1, gameChosenMessage[1], sizeof(gameChosenMessage[1]), 100);
 	 /*
   if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
 	 		Error_Handler();
 
 	 HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);*/
-	 rxdata[0] = 'n';
-  }/*
-  HAL_Delay(10000);
   HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
+  //HAL_Delay(timedelay); //this causes the answers array to be inaccurate
   if(answers[0] != '\000'){
 	  for (int i = 0 ; i < 5; i++) {
-	          if (seq[i] != answers[i]) {
+	          if (charseq[i] != (answers[i])) {
 	        	  wrongAnswer++;
+	        	  break;
 	          }
 	  }
 	 if (wrongAnswer == 0){
-		 HAL_UART_Transmit(&huart1, roundWin, sizeof(roundWin), 100);
-		 wrongAnswer = 0;
+		 HAL_UART_Transmit(&huart1, roundWin, sizeof(roundWin), 1000);
+		// timedelay -= 2000;
+		 answers[0] = '\000';
 	 }
 
 	 else{
-		 HAL_UART_Transmit(&huart1, roundLoss, sizeof(roundLoss), 100);
+		 HAL_UART_Transmit(&huart1, roundLoss, sizeof(roundLoss), 1000);
+		 wrongAnswer = 0;
+		 answers[0] = '\000';
 	 }
 
 
-  }/*
+  }
+/*
   else{
 	  HAL_UART_Transmit(&huart1, timeout, sizeof(timeout), 100);
-  }
-*/
+  }*/
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
