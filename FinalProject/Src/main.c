@@ -63,7 +63,7 @@ int32_t address[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F000
 
 uint32_t pushButtonCounter = 0;
 uint8_t recorder = 0;
-uint8_t player = 1;
+uint8_t player = 0;
 uint32_t test;
 uint32_t indexSeq;
 uint32_t addr = 0x000000;
@@ -76,6 +76,7 @@ int timedelay = 10000;
 uint8_t charseq[5] = {'4','1','4','7', '9'};
 uint8_t answers[5];
 uint8_t wrongAnswer = 0;
+uint8_t recordingMessage[100] = "When done recording, press any button to continue \r\n";
 uint8_t timeout[1000] = "Sorry, you were too slow! \r\n"
 		               "Game over! \r\n";
 uint8_t roundWin[1000] = "You got it right! \r\n"
@@ -88,7 +89,7 @@ uint8_t startMessage[1000] = "Let's Test Your Memory! \r\n"
 						   	 "0: No \r\n";
 uint8_t playerMessage[1000] = "Then, proceed to choose the game mode! \r\n";
 uint8_t recorderMessage[1000] = "Please press the blue button when ready \r\n"
-								"to start recording the numbers (0-9)";
+								"to start recording the numbers (0-9) \r\n";
 uint8_t chooseModeMessage[1000] = "Choose The Game Mode: \r\n"
 							"0: Memory Digits \r\n"
 							"1: Memory Directions \r\n";
@@ -156,13 +157,6 @@ int main(void)
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 
-  if(recorder) {
- 	  for(int i = 1; i < 30; i++) {
- 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
- 		  	Error_Handler();
- 		  addr = 0x010000*i;
- 	  }
-   }
 
   // Send start message of the game
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);
@@ -176,6 +170,7 @@ int main(void)
  	 HAL_UART_Transmit(&huart1, recorderMessage, sizeof(recorderMessage), 100);
  	 recorder = 1;
  	 player = 0;
+ 	rxdata[0] ='\000';
    }
   if (rxdata[0] == '1'){
  	 HAL_UART_Transmit(&huart1, playerMessage, sizeof(playerMessage), 100);
@@ -183,6 +178,18 @@ int main(void)
  	 player = 1;
  	 rxdata[0] ='\000';
    }
+
+  if(recorder) {
+ 	  for(int i = 1; i < 30; i++) {
+ 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
+ 		  	Error_Handler();
+ 		  addr = 0x010000*i;
+ 	  }
+ 	  HAL_UART_Transmit(&huart1, recordingMessage, sizeof(recordingMessage), 100);
+ 	  while(rxdata[0] == '\000')
+ 	 	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
+   }
+
 
   HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
   while(rxdata[0] == '\000')
@@ -209,8 +216,9 @@ int main(void)
 	 		Error_Handler();
 
 	 HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);*/
-  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
-  //HAL_Delay(timedelay); //this causes the answers array to be inaccurate
+  while(answers[0] == '\000')
+	  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
+  HAL_Delay(timedelay); //this causes the answers array to be inaccurate
   if(answers[0] != '\000'){
 	  for (int i = 0 ; i < 5; i++) {
 	          if (charseq[i] != (answers[i])) {
@@ -220,7 +228,7 @@ int main(void)
 	  }
 	 if (wrongAnswer == 0){
 		 HAL_UART_Transmit(&huart1, roundWin, sizeof(roundWin), 1000);
-		// timedelay -= 2000;
+		 timedelay -= 2000;
 		 answers[0] = '\000';
 	 }
 
