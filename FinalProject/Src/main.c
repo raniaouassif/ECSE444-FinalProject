@@ -76,6 +76,7 @@ uint8_t j = 0;
 
 #define gameModes 2
 int timedelay = 10000;
+int stay_here = 1;
 uint8_t charseq[5] = {'4','1','4','7', '9'};
 uint8_t answers[5];
 uint8_t wrongAnswer = 0;
@@ -100,7 +101,7 @@ uint8_t chooseModeMessage[100] = "Choose The Game Mode: \r\n"
 							"0: Memory Digits \r\n"
 							"1: Memory Directions \r\n";
 uint8_t startTypingMessage[100] = "Enter what you remember: \r\n";
-char gameChosenMessage[2][100] ={"Starting Memory Digits..\r\nListen for sounds!\r\n", "Starting Memory Directions.. \r\n"};
+char gameChosenMessage[2][100] ={"Starting Memory Digits..\r\nPlaying numbers..wait until completion!\r\n", "Starting Memory Directions.. \r\n"};
 uint8_t clearCommand[100] =  "\033[1J";
 uint8_t rxdata[30];
 uint8_t gameModeArr[gameModes] = {0, 1};
@@ -193,6 +194,8 @@ int main(void)
    }
 
   if(recorder) {
+	  sprintf(msg_buffer,recordingMessage);
+	   HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
  	  for(int i = 1; i < 30; i++) {
  		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
  		  	Error_Handler();
@@ -232,17 +235,23 @@ int main(void)
   {
 
 	  if(digitLevelSelector == 0){
-/*
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+
+		  for(int i = 0; i < 5; i++){
+
+		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[i]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 
 		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-		  //we should loop until it returns from calback.?????
-*/
+		  while(stay_here);
+		  stay_here = 1;
+		  }
+
+		  sprintf(msg_buffer,startTypingMessage);
+		  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
 
 		  while(answers[0] == '\000')
 			  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
-		  //HAL_Delay(timedelay); //this causes the answers array to be inaccurate
+		//  HAL_Delay(timedelay); //this causes the answers array to be inaccurate
 
 
 		  if(answers[0] != '\000'){
@@ -256,7 +265,7 @@ int main(void)
 				 sprintf(msg_buffer,roundWin);
 				 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
 
-				 timedelay -= 2000;
+				// timedelay -= 2000;
 				 answers[0] = '\000';
 			 }
 
@@ -268,13 +277,15 @@ int main(void)
 				 answers[0] = '\000';
 			 }
 
+
 			 digitLevelSelector++;
           }
+/*
+		 else{
+			 sprintf(msg_buffer,timeout);
+			  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
+		   }*/
       }//end digit selector= 0
-
-	  if(direcLevelSelector == 0){
-
-	  }
 
 
 /*
@@ -655,23 +666,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 		if(recorder)
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
-
+/*
 		if(player) {
 				test = address[seq[j]];
 				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  test, sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-		}
-
+		}*/
+/*
 	 	  sprintf(msg_buffer,startTypingMessage);
-	 	  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
+	 	  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);*/
 	}
 }
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
-	if(player) {
+	stay_here = 0;
+	/*if(player) {
 	j = j + 1;
 	test = address[seq[j]];
 	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  test, sizeof(SEQUENCE)) != QSPI_OK)
@@ -682,7 +694,7 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 	if (j == 5) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	}
-	}
+	}*/
 
 }
 
@@ -707,6 +719,7 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 	}
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 	pushButtonCounter = (pushButtonCounter + 1) % 10;
+	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 
 }
 /* USER CODE END 4 */
