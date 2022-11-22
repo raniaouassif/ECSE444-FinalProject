@@ -77,6 +77,7 @@ uint8_t j = 0;
 #define gameModes 2
 int timedelay = 10000;
 int stay_here = 1;
+volatile int recorder_wait = 1;
 uint8_t charseq[5] = {'4','1','4','7', '9'};
 uint8_t answers[5];
 uint8_t wrongAnswer = 0;
@@ -95,8 +96,10 @@ uint8_t startMessage[100] = "Let's Test Your Memory! \r\n"
 							 "1: Yes \r\n"
 						   	 "0: No \r\n";
 uint8_t playerMessage[100] = "Then, proceed to choose the game mode! \r\n";
-uint8_t recorderMessage[100] = "Please press the blue button when ready \r\n"
-								"to start recording the numbers (0-9) \r\n";
+uint8_t eraserMessage[100] = "Allocating space... \r\n";
+uint8_t recorderMessage[200] = "All set! Please press the blue button when ready \r\n"
+								"to start recording the numbers (0-9) \r\n"
+								"When done recording, press any key to continue\r\n";
 uint8_t chooseModeMessage[100] = "Choose The Game Mode: \r\n"
 							"0: Memory Digits \r\n"
 							"1: Memory Directions \r\n";
@@ -179,11 +182,11 @@ int main(void)
 	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
 
   if (rxdata[0] == '0'){
-	 sprintf(msg_buffer,recorderMessage);
+	 sprintf(msg_buffer,eraserMessage);
 	 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
  	 recorder = 1;
  	 player = 0;
- 	rxdata[0] ='\000';
+ 	 rxdata[0] ='\000';
    }
   if (rxdata[0] == '1'){
 	 sprintf(msg_buffer,playerMessage);
@@ -194,19 +197,22 @@ int main(void)
    }
 
   if(recorder) {
-	  sprintf(msg_buffer,recordingMessage);
-	   HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
+
  	  for(int i = 1; i < 30; i++) {
  		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
  		  	Error_Handler();
  		  addr = 0x010000*i;
  	  }
 
- 	  sprintf(msg_buffer,recordingMessage);
+ 	  sprintf(msg_buffer,recorderMessage);
  	  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
- 	  while(rxdata[0] == '\000')
- 	 	  HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
+
+  while(recorder_wait);
+ 	 // while(rxdata[0] == '\000')
+ 	 	// HAL_UART_Receive(&huart1, rxdata, sizeof(rxdata), 100);
    }
+
+
 
   sprintf(msg_buffer,chooseModeMessage);
   HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
@@ -227,6 +233,7 @@ int main(void)
 	 sprintf(msg_buffer,gameChosenMessage[1]);
 	 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
   }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -683,6 +690,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 	stay_here = 0;
+//	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 	/*if(player) {
 	j = j + 1;
 	test = address[seq[j]];
@@ -711,15 +719,26 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 			SEQUENCE[i] = SEQUENCE[i] >> 12;
 		}
 	}
-	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
-		Error_Handler();
-	}
-	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
-		Error_Handler();
-	}
+	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
+
+
+	BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE));
+
+	//if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+	//	Error_Handler();
+	//}
+	BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE));
+
+	//if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+	//	Error_Handler();
+	//}
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 	pushButtonCounter = (pushButtonCounter + 1) % 10;
-	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
+	j++;
+	if(j == 10){
+		recorder_wait = 0;
+		j = 0;
+	}
 
 }
 /* USER CODE END 4 */
@@ -733,6 +752,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
 	HAL_GPIO_WritePin(redLED_GPIO_Port, redLED_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 	__BKPT();
 
   /* USER CODE END Error_Handler_Debug */
