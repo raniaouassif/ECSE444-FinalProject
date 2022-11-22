@@ -84,8 +84,10 @@ volatile int recorder_wait = 1;
 charseq2[7] = {'5', '9', '4', '7', '0', '2', '3'};
 charseq[5] = {'0','2','1','7', '9'};
 //uint8_t *charseq;
-uint8_t answers[5];
+uint8_t answers[6];
+uint8_t answers2[7];
 uint8_t wrongAnswer = 0;
+uint8_t wrongAnswer2 = 0;
 int int_converter[5];
 
 char msg_buffer[100];
@@ -282,6 +284,7 @@ int main(void)
 
 				// timedelay -= 2000;
 				 answers[0] = '\000';
+				 digitLevelSelector++;
 			 }
 
 			 else{
@@ -290,41 +293,44 @@ int main(void)
 				 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
 				 wrongAnswer = 0;
 				 answers[0] = '\000';
+				 digitLevelSelector = 54;
 			 }
 		  }
-			 digitLevelSelector++;
 
 	  }
 		if(digitLevelSelector == 1){
 			 if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq2[0]], sizeof(SEQUENCE)) != QSPI_OK)
-								Error_Handler();
+					  Error_Handler();
 
 					  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 					  while(stay_here2);
-					  answers[0] = '\000';
+					  answers2[0] = '\000';
 
-					  while(answers[0] == '\000')
-						  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
+					  while(answers2[0] == '\000')
+						  HAL_UART_Receive(&huart1, answers2, sizeof(answers), 100);
+
 					//  HAL_Delay(timedelay); //this causes the answers array to be inaccurate
-					  if(answers[0] != '\000'){
-						  for (int i = 0 ; i < 5; i++) {
-								  if (charseq2[i] != (answers[i])) {
-									  wrongAnswer++;
+					  if(answers2[0] != '\000'){
+						  for (int i = 0 ; i < 6; i++) {
+								  if (charseq2[i] != (answers2[i])) {
+									  wrongAnswer2++;
 									  break;
 								  }
 						  }
-						 if (wrongAnswer == 0){
+						 if (wrongAnswer2 == 0){
 							 sprintf(msg_buffer,roundWin);
 							 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
-							 answers[0] = '\000';
+							 answers2[0] = '\000';
+							 digitLevelSelector++;
 						 }
 						 else{
 							 sprintf(msg_buffer,roundLoss);
 							 HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
-							 wrongAnswer = 0;
-							 answers[0] = '\000';
+							 wrongAnswer2 = 0;
+							 answers2[0] = '\000';
+							 digitLevelSelector = 55;
 						 }
-						 digitLevelSelector++;
+
 		}
 /*
 		 else{
@@ -761,8 +767,9 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 			sprintf(msg_buffer,startTypingMessage);
 			HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
-			answers[0] = '\000';
+			answers2[0] = '\000';
 			stay_here2 = 0;
+			j =0;
 		}
 		}
 
