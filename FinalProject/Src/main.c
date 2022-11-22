@@ -70,7 +70,7 @@ uint8_t player = 0;
 uint32_t test;
 uint32_t indexSeq;
 uint32_t addr = 0x000000;
-uint8_t seq[5] = {4,1,4,7,9};
+uint8_t seq[5] = {8,1,8,7,9};
 uint32_t pressed = 0;
 uint8_t j = 0;
 
@@ -78,7 +78,7 @@ uint8_t j = 0;
 int timedelay = 10000;
 int stay_here = 1;
 volatile int recorder_wait = 1;
-uint8_t charseq[5] = {'4','1','4','7', '9'};
+uint8_t charseq[5] = {'8','1','8','7', '9'};
 uint8_t answers[5];
 uint8_t wrongAnswer = 0;
 
@@ -243,18 +243,18 @@ int main(void)
 
 	  if(digitLevelSelector == 0){
 
-		  for(int i = 0; i < 5; i++){
+	/*	  for(int i = 0; i < 5; i++){
 
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[i]], sizeof(SEQUENCE)) != QSPI_OK)
+		  stay_here = 1;
+		  }*/
+		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 
 		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 		  while(stay_here);
-		  stay_here = 1;
-		  }
+		  answers[0] = '\000';
 
-		  sprintf(msg_buffer,startTypingMessage);
-		  HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
+
 
 		  while(answers[0] == '\000')
 			  HAL_UART_Receive(&huart1, answers, sizeof(answers), 100);
@@ -523,7 +523,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 8000;
+  htim2.Init.Period = 4000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -689,9 +689,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
-	stay_here = 0;
 //	HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
-	/*if(player) {
+	if(player) {
 	j = j + 1;
 	test = address[seq[j]];
 	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  test, sizeof(SEQUENCE)) != QSPI_OK)
@@ -701,8 +700,12 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 	if (j == 5) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		sprintf(msg_buffer,startTypingMessage);
+		HAL_UART_Transmit(&huart1, msg_buffer, strlen((char const *)msg_buffer), 100);
+		answers[0] = '\000';
+		stay_here = 0;
 	}
-	}*/
+	}
 
 }
 
