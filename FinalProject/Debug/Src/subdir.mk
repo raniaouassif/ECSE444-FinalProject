@@ -8,6 +8,7 @@ C_SRCS += \
 ../Src/lsm6dsl.c \
 ../Src/main.c \
 ../Src/stm32l4s5i_iot01.c \
+../Src/stm32l4s5i_iot01_accelero.c \
 ../Src/stm32l4s5i_iot01_qspi.c \
 ../Src/stm32l4xx_hal_msp.c \
 ../Src/stm32l4xx_it.c \
@@ -19,6 +20,7 @@ OBJS += \
 ./Src/lsm6dsl.o \
 ./Src/main.o \
 ./Src/stm32l4s5i_iot01.o \
+./Src/stm32l4s5i_iot01_accelero.o \
 ./Src/stm32l4s5i_iot01_qspi.o \
 ./Src/stm32l4xx_hal_msp.o \
 ./Src/stm32l4xx_it.o \
@@ -30,6 +32,7 @@ C_DEPS += \
 ./Src/lsm6dsl.d \
 ./Src/main.d \
 ./Src/stm32l4s5i_iot01.d \
+./Src/stm32l4s5i_iot01_accelero.d \
 ./Src/stm32l4s5i_iot01_qspi.d \
 ./Src/stm32l4xx_hal_msp.d \
 ./Src/stm32l4xx_it.d \
@@ -45,7 +48,7 @@ Src/%.o Src/%.su: ../Src/%.c Src/subdir.mk
 clean: clean-Src
 
 clean-Src:
-	-$(RM) ./Src/lsm6dsl.d ./Src/lsm6dsl.o ./Src/lsm6dsl.su ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32l4s5i_iot01.d ./Src/stm32l4s5i_iot01.o ./Src/stm32l4s5i_iot01.su ./Src/stm32l4s5i_iot01_qspi.d ./Src/stm32l4s5i_iot01_qspi.o ./Src/stm32l4s5i_iot01_qspi.su ./Src/stm32l4xx_hal_msp.d ./Src/stm32l4xx_hal_msp.o ./Src/stm32l4xx_hal_msp.su ./Src/stm32l4xx_it.d ./Src/stm32l4xx_it.o ./Src/stm32l4xx_it.su ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32l4xx.d ./Src/system_stm32l4xx.o ./Src/system_stm32l4xx.su
+	-$(RM) ./Src/lsm6dsl.d ./Src/lsm6dsl.o ./Src/lsm6dsl.su ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32l4s5i_iot01.d ./Src/stm32l4s5i_iot01.o ./Src/stm32l4s5i_iot01.su ./Src/stm32l4s5i_iot01_accelero.d ./Src/stm32l4s5i_iot01_accelero.o ./Src/stm32l4s5i_iot01_accelero.su ./Src/stm32l4s5i_iot01_qspi.d ./Src/stm32l4s5i_iot01_qspi.o ./Src/stm32l4s5i_iot01_qspi.su ./Src/stm32l4xx_hal_msp.d ./Src/stm32l4xx_hal_msp.o ./Src/stm32l4xx_hal_msp.su ./Src/stm32l4xx_it.d ./Src/stm32l4xx_it.o ./Src/stm32l4xx_it.su ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32l4xx.d ./Src/system_stm32l4xx.o ./Src/system_stm32l4xx.su
 
 .PHONY: clean-Src
 

@@ -23,7 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include "stm32l4s5i_iot01_qspi.h"
 #include "stm32l4s5i_iot01_accelero.h"
-
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,7 +131,7 @@ int main(void)
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  BSP_ACCELERO_Init();
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 

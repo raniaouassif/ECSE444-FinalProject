@@ -25,6 +25,7 @@
 "./Src/lsm6dsl.o"
 "./Src/main.o"
 "./Src/stm32l4s5i_iot01.o"
+"./Src/stm32l4s5i_iot01_accelero.o"
 "./Src/stm32l4s5i_iot01_qspi.o"
 "./Src/stm32l4xx_hal_msp.o"
 "./Src/stm32l4xx_it.o"
