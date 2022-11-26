@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "stm32l4s5i_iot01_qspi.h"
 #include "stm32l4s5i_iot01_accelero.h"
+#include "arm_math.h" //complex header file that works differently for different Cortex processor
 #include <stdio.h>
 #include <string.h>
 /* USER CODE END Includes */
@@ -85,12 +86,13 @@ int16_t x1; //initial acc. x value
 int16_t x2; //during acc. x value
 int16_t y1;
 int16_t y2;
-int16_t maxX2;
-int16_t maxY2;
-int16_t  arrayX[2000];
-int16_t  arrayY[2000];
+float32_t maxX2;
+float32_t maxY2;
+float32_t  arrayX[2000];
+float32_t arrayY[2000];
 int16_t arrayIndex = 0;
-int16_t maxIndex;
+uint32_t maxIndexX;
+uint32_t maxIndexY;
 
 
 int16_t deltaX; //percentage change
@@ -178,15 +180,15 @@ int main(void)
 
 	  if(player && directionGame) {
 		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- x1  > 100 || accelerometer[1] -  y1 > 100) {			  x2 = accelerometer[0];
+		  if(accelerometer[0]- x1  > 100 || accelerometer[1] -  y1 > 100) {
+
 		  	  x2 = accelerometer[0];
 		  	  y2 = accelerometer[1];
-		  	  arrayX[arrayIndex] = x2;
-		  	  arrayY[arrayIndex] = x2;
+		  	  arrayX[arrayIndex] = (float32_t) x2;
+		  	  arrayY[arrayIndex] = (float32_t) y2;
 		  	  arrayIndex++;
-		  	  maxX2 =cMax(&arrayX, 2000, 0, 2000);
-		  	  maxY2 =  cMax(&arrayY, 2000, 0, 2000);
-//		  	  maxIndex =
+		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
 		  }
 
 	  }
@@ -649,6 +651,7 @@ void get_ACC_XY_InitialPosition(){
 	 HAL_Delay(100);
 	 x1 = accelerometer[0];
 	 y1 = accelerometer[1];
+
 	 counterInitial++;
 }
 
