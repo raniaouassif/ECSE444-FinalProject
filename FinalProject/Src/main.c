@@ -74,6 +74,29 @@ uint32_t addr = 0x000000;
 uint8_t seq[5] = {4,1,4,7,9};
 uint32_t pressed = 0;
 uint8_t j = 0;
+
+uint8_t memoryGame = 0;
+uint8_t directionGame = 1;
+
+// Accelerometer
+int16_t accelerometer[3];
+char str[100];
+int16_t x1; //initial acc. x value
+int16_t x2; //during acc. x value
+int16_t y1;
+int16_t y2;
+int16_t maxX2;
+int16_t maxY2;
+int16_t  arrayX[2000];
+int16_t  arrayY[2000];
+int16_t arrayIndex = 0;
+int16_t maxIndex;
+
+
+int16_t deltaX; //percentage change
+int16_t deltaY;
+
+int8_t counterInitial = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,7 +115,7 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int16_t cMax(int16_t *array, int size, int16_t *max, int *maxIndex);
 /* USER CODE END 0 */
 
 /**
@@ -136,13 +159,12 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
 
   if(recorder) {
-	  for(int i = 1; i < 30; i++) {
+	  for(int i = 1; i < 34; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
 		  addr = 0x010000*i;
 	  }
   }
-
 
   /* USER CODE END 2 */
 
@@ -150,10 +172,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(player && directionGame && !counterInitial) {
+		  get_ACC_XY_InitialPosition();
+	  }
+
+	  if(player && directionGame) {
+		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+		  if(accelerometer[0]- x1  > 100 || accelerometer[1] -  y1 > 100) {			  x2 = accelerometer[0];
+		  	  x2 = accelerometer[0];
+		  	  y2 = accelerometer[1];
+		  	  arrayX[arrayIndex] = x2;
+		  	  arrayY[arrayIndex] = x2;
+		  	  arrayIndex++;
+		  	  maxX2 =cMax(&arrayX, 2000, 0, 2000);
+		  	  maxY2 =  cMax(&arrayY, 2000, 0, 2000);
+//		  	  maxIndex =
+		  }
+
+	  }
+
     /* USER CODE END WHILE */
+
 
     /* USER CODE BEGIN 3 */
   }
+
   /* USER CODE END 3 */
 }
 
@@ -570,13 +613,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		if(recorder)
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
-		if(player) {
-				test = address[seq[j]];
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[j]], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-
-		}
+//		if(player) {
+//
+//			for(int i = 0 ; j < 10; i++) {
+//
+//			BSP_ACCELERO_AccGetXYZ(accelerometer);
+//			sprintf(str, "\n %.2d, %.2d, %.2d\r\n", (int) accelerometer[0], (int) accelerometer[1], (int) accelerometer[2]);
+//			UART_status = HAL_UART_Transmit(&huart1, (uint8_t *) str, (uint16_t) strlen(str), 100);
+//			if (UART_status != HAL_OK)
+//				HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
+//			}
+//		}
 	}
 }
 
@@ -595,6 +642,26 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 	}
 	}
 
+}
+
+void get_ACC_XY_InitialPosition(){
+	 BSP_ACCELERO_AccGetXYZ(accelerometer);
+	 HAL_Delay(100);
+	 x1 = accelerometer[0];
+	 y1 = accelerometer[1];
+	 counterInitial++;
+}
+
+int16_t cMax(int16_t *array, int size, int16_t *max, int *maxIndex) {
+	(*max) = array[0];
+    (*maxIndex) = 0;
+    for (uint32_t i = 1; i < size; i++) {
+    	if (array[i] > (*max)) {
+                  (*max) = array[i];
+                  (*maxIndex) = i;
+        }
+    }
+    return max;
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
@@ -629,7 +696,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-	HAL_GPIO_WritePin(redLED_GPIO_Port, redLED_Pin, GPIO_PIN_RESET);
+//	HAL_GPIO_WritePin(redLED_GPIO_Port, redLED_Pin, GPIO_PIN_RESET);
 	__BKPT();
 
   /* USER CODE END Error_Handler_Debug */
