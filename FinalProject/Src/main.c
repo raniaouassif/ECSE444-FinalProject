@@ -55,6 +55,7 @@ I2C_HandleTypeDef hi2c2;
 OSPI_HandleTypeDef hospi1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart1;
 
@@ -83,9 +84,7 @@ uint8_t directionGame = 1;
 int16_t accelerometer[3];
 char str[100];
 int16_t acc_x1; //initial acc. x value
-int16_t acc_x2; //during acc. x value
 int16_t acc_y1;
-int16_t acc_y2;
 float32_t maxX2;
 float32_t maxY2;
 float32_t  arrayX[2000];
@@ -94,10 +93,9 @@ int16_t arrayIndex = 0;
 uint32_t maxIndexX;
 uint32_t maxIndexY;
 
-
-int16_t deltaX; //percentage change
-int16_t deltaY;
-
+char directionResult[4];
+uint32_t counterRestart;
+int8_t resultIndex = 0;
 int8_t counterInitial = 0;
 /* USER CODE END PV */
 
@@ -111,13 +109,14 @@ static void MX_DFSDM1_Init(void);
 static void MX_OCTOSPI1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int16_t cMax(int16_t *array, int size, int16_t *max, int *maxIndex);
+void get_ACC_XY_InitialPosition();
 /* USER CODE END 0 */
 
 /**
@@ -155,6 +154,7 @@ int main(void)
   MX_OCTOSPI1_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init();
   BSP_QSPI_Init();
@@ -175,26 +175,26 @@ int main(void)
   while (1)
   {
 	  if(player && directionGame && !counterInitial) {
-		  get_ACC_XY_InitialPosition();
+		  HAL_Delay(10000);
+		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+		  HAL_Delay(100);
+		  acc_x1 = accelerometer[0];
+		  acc_y1 = accelerometer[1];
+		  counterInitial++;
 	  }
 
-	  if(player && directionGame) {
+	  if(player && directionGame && (resultIndex < 4)) {
 		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
-
-		  	  acc_x2 = accelerometer[0];
-		  	  acc_y2 = accelerometer[1];
-		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
-		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
+		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] - acc_y1 > 100) {
+		  	  arrayX[arrayIndex] = (float32_t) accelerometer[0];
+		  	  arrayY[arrayIndex] = (float32_t) accelerometer[1];
 		  	  arrayIndex++;
 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+			  HAL_TIM_Base_Start_IT(&htim4);
 		  }
-
 	  }
-
     /* USER CODE END WHILE */
-
 
     /* USER CODE BEGIN 3 */
   }
@@ -468,7 +468,7 @@ static void MX_TIM2_Init(void)
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 4000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -487,6 +487,51 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 60000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 4000;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -629,6 +674,32 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 }
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	if (htim->Instance == htim4.Instance) { // only for timer 4
+		for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
+			arrayX[i] = 0;
+			arrayY[i] = 0;
+		}
+		if(maxX2 > maxY2) {
+			if(maxX2 > 500) {
+				directionResult[resultIndex] = 'X'; //fast horizontal
+			} else {
+				directionResult[resultIndex] = 'x'; //slow horizontal
+			}
+		} else {
+			if(maxY2 > 500) {
+				directionResult[resultIndex] = 'Y'; //fast vertical
+			} else {
+				directionResult[resultIndex] = 'y'; //slow vertical
+			}
+		}
+		resultIndex++;
+		counterRestart = 0;
+		arrayIndex = 0;
+		HAL_TIM_Base_Stop_IT(&htim4);
+	}
+}
+
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 	if(player) {
@@ -643,28 +714,6 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	}
 	}
-
-}
-
-void get_ACC_XY_InitialPosition(){
-	 BSP_ACCELERO_AccGetXYZ(accelerometer);
-	 HAL_Delay(100);
-	 acc_x1 = accelerometer[0];
-	 acc_y1 = accelerometer[1];
-
-	 counterInitial++;
-}
-
-int16_t cMax(int16_t *array, int size, int16_t *max, int *maxIndex) {
-	(*max) = array[0];
-    (*maxIndex) = 0;
-    for (uint32_t i = 1; i < size; i++) {
-    	if (array[i] > (*max)) {
-                  (*max) = array[i];
-                  (*maxIndex) = i;
-        }
-    }
-    return max;
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
