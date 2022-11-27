@@ -82,10 +82,10 @@ uint8_t directionGame = 1;
 // Accelerometer
 int16_t accelerometer[3];
 char str[100];
-int16_t x1; //initial acc. x value
-int16_t x2; //during acc. x value
-int16_t y1;
-int16_t y2;
+int16_t acc_x1; //initial acc. x value
+int16_t acc_x2; //during acc. x value
+int16_t acc_y1;
+int16_t acc_y2;
 float32_t maxX2;
 float32_t maxY2;
 float32_t  arrayX[2000];
@@ -180,12 +180,12 @@ int main(void)
 
 	  if(player && directionGame) {
 		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- x1  > 100 || accelerometer[1] -  y1 > 100) {
+		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
 
-		  	  x2 = accelerometer[0];
-		  	  y2 = accelerometer[1];
-		  	  arrayX[arrayIndex] = (float32_t) x2;
-		  	  arrayY[arrayIndex] = (float32_t) y2;
+		  	  acc_x2 = accelerometer[0];
+		  	  acc_y2 = accelerometer[1];
+		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
+		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
 		  	  arrayIndex++;
 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
@@ -649,8 +649,8 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 void get_ACC_XY_InitialPosition(){
 	 BSP_ACCELERO_AccGetXYZ(accelerometer);
 	 HAL_Delay(100);
-	 x1 = accelerometer[0];
-	 y1 = accelerometer[1];
+	 acc_x1 = accelerometer[0];
+	 acc_y1 = accelerometer[1];
 
 	 counterInitial++;
 }
