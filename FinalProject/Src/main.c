@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include "stm32l4s5i_iot01_qspi.h"
 #include "stm32l4s5i_iot01_accelero.h"
+#include "stm32l4s5i_iot01_gyro.h"
+
 #include "arm_math.h" //complex header file that works differently for different Cortex processor
 #include <stdio.h>
 #include <string.h>
@@ -81,14 +83,16 @@ uint8_t directionGame = 1;
 
 // Accelerometer
 int16_t accelerometer[3];
+#define sizeAccResult 4
+int acc_Result[sizeAccResult];
 char str[100];
-int16_t x1; //initial acc. x value
-int16_t x2; //during acc. x value
-int16_t y1;
-int16_t y2;
+int16_t acc_x1; //initial acc. x value
+int16_t acc_x2; //during acc. x value
+int16_t acc_y1;
+int16_t acc_y2;
 float32_t maxX2;
 float32_t maxY2;
-float32_t  arrayX[2000];
+float32_t arrayX[2000];
 float32_t arrayY[2000];
 int16_t arrayIndex = 0;
 uint32_t maxIndexX;
@@ -180,17 +184,15 @@ int main(void)
 
 	  if(player && directionGame) {
 		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- x1  > 100 || accelerometer[1] -  y1 > 100) {
-
-		  	  x2 = accelerometer[0];
-		  	  y2 = accelerometer[1];
-		  	  arrayX[arrayIndex] = (float32_t) x2;
-		  	  arrayY[arrayIndex] = (float32_t) y2;
+		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
+		  	  acc_x2 = accelerometer[0];
+		  	  acc_y2 = accelerometer[1];
+		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
+		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
 		  	  arrayIndex++;
 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
 		  }
-
 	  }
 
     /* USER CODE END WHILE */
@@ -649,22 +651,10 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 void get_ACC_XY_InitialPosition(){
 	 BSP_ACCELERO_AccGetXYZ(accelerometer);
 	 HAL_Delay(100);
-	 x1 = accelerometer[0];
-	 y1 = accelerometer[1];
+	 acc_x1 = accelerometer[0];
+	 acc_y1 = accelerometer[1];
 
 	 counterInitial++;
-}
-
-int16_t cMax(int16_t *array, int size, int16_t *max, int *maxIndex) {
-	(*max) = array[0];
-    (*maxIndex) = 0;
-    for (uint32_t i = 1; i < size; i++) {
-    	if (array[i] > (*max)) {
-                  (*max) = array[i];
-                  (*maxIndex) = i;
-        }
-    }
-    return max;
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
