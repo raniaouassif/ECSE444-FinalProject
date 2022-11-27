@@ -82,7 +82,7 @@ uint8_t digitGame = 0;
 
 uint32_t addr = 0x000000;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
-char seqDirection[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
+char seqDirections[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
 uint32_t pressed = 0;
 uint8_t addressDigitIndex = 0;
 uint8_t addressDirectionIndex = 0;
@@ -645,11 +645,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
 		if(player && digitGame) {
-			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 				Error_Handler();
 			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 		} else if(player && directionGame) {
-			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seqDirections[addressDirectionIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[addressDirectionIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 				Error_Handler();
 			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 		}
