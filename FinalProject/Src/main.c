@@ -83,6 +83,8 @@ uint8_t directionGame = 1;
 
 // Accelerometer
 int16_t accelerometer[3];
+int16_t gyro[3];
+
 #define sizeAccResult 4
 int acc_Result[sizeAccResult];
 char str[100];
@@ -97,6 +99,14 @@ float32_t arrayY[2000];
 int16_t arrayIndex = 0;
 uint32_t maxIndexX;
 uint32_t maxIndexY;
+
+
+int16_t gyro_x1; //initial acc. x value
+int16_t gyro_x2; //during acc. x value
+int16_t gyro_y1;
+int16_t gyro_y2;
+int16_t gyro_z1; //initial acc. x value
+int16_t gyro_z2; //during acc. x value
 
 
 int16_t deltaX; //percentage change
@@ -161,6 +171,8 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init();
+  BSP_GYRO_Init();
+
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 
@@ -178,22 +190,38 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  if(player && directionGame && !counterInitial) {
+//		  get_ACC_XY_InitialPosition();
+//	  }
+//
+//	  if(player && directionGame) {
+//		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+//		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
+//		  	  acc_x2 = accelerometer[0];
+//		  	  acc_y2 = accelerometer[1];
+//		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
+//		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
+//		  	  arrayIndex++;
+//		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+//		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+//		  }
+//	  }
 	  if(player && directionGame && !counterInitial) {
-		  get_ACC_XY_InitialPosition();
-	  }
+	 		  get_GYRO_XYZ_InitialPosition();
+	 	  }
 
-	  if(player && directionGame) {
-		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
-		  	  acc_x2 = accelerometer[0];
-		  	  acc_y2 = accelerometer[1];
-		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
-		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
-		  	  arrayIndex++;
-		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
-		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
-		  }
-	  }
+	 	  if(player && directionGame) {
+	 		  BSP_GYRO_GetXYZ(gyro);
+	 		  if(gyro[0]- gyro_x1  > 100 || gyro[1] -  gyro_y1 > 100) {
+	 		  	  gyro_x2 = gyro[0];
+	 		  	  gyro_y2 = gyro[1];
+	 		  	  arrayX[arrayIndex] = (float32_t) gyro_x2;
+	 		  	  arrayY[arrayIndex] = (float32_t) gyro_y2;
+	 		  	  arrayIndex++;
+	 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+	 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+	 		  }
+	 	  }
 
     /* USER CODE END WHILE */
 
@@ -653,6 +681,14 @@ void get_ACC_XY_InitialPosition(){
 	 HAL_Delay(100);
 	 acc_x1 = accelerometer[0];
 	 acc_y1 = accelerometer[1];
+	 counterInitial++;
+}
+
+void get_GYRO_XYZ_InitialPosition() {
+	 BSP_GYRO_GetXYZ(gyro);
+	 HAL_Delay(100);
+	 acc_x1 = gyro[0];
+	 acc_y1 = gyro[1];
 
 	 counterInitial++;
 }
