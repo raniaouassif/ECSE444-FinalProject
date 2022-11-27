@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -55,10 +56,12 @@ I2C_HandleTypeDef hi2c2;
 OSPI_HandleTypeDef hospi1;
 
 TIM_HandleTypeDef htim2;
-TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart1;
 
+osThreadId GetSpeedAndDirHandle;
+osThreadId AcceleroSensorHandle;
+osThreadId CounterDirGameHandle;
 /* USER CODE BEGIN PV */
 // Sampling rate = 20 kHz, duration = 2s, -> 40 000 samples per audio
 // We have 10 audios, int = 4 bytes ->
@@ -97,6 +100,7 @@ char directionResult[4];
 uint32_t counterRestart;
 int8_t resultIndex = 0;
 int8_t counterInitial = 0;
+int8_t startedMoving = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -109,7 +113,10 @@ static void MX_DFSDM1_Init(void);
 static void MX_OCTOSPI1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_TIM4_Init(void);
+void StartGetSpeedAndDir(void const * argument);
+void StartAcceleroSensor(void const * argument);
+void StartCounterDirGame(void const * argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -154,7 +161,6 @@ int main(void)
   MX_OCTOSPI1_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
-  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init();
   BSP_QSPI_Init();
@@ -170,30 +176,48 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of GetSpeedAndDir */
+  osThreadDef(GetSpeedAndDir, StartGetSpeedAndDir, osPriorityNormal, 0, 128);
+  GetSpeedAndDirHandle = osThreadCreate(osThread(GetSpeedAndDir), NULL);
+
+  /* definition and creation of AcceleroSensor */
+  osThreadDef(AcceleroSensor, StartAcceleroSensor, osPriorityIdle, 0, 128);
+  AcceleroSensorHandle = osThreadCreate(osThread(AcceleroSensor), NULL);
+
+  /* definition and creation of CounterDirGame */
+  osThreadDef(CounterDirGame, StartCounterDirGame, osPriorityIdle, 0, 128);
+  CounterDirGameHandle = osThreadCreate(osThread(CounterDirGame), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(player && directionGame && !counterInitial) {
-		  HAL_Delay(10000);
-		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  HAL_Delay(100);
-		  acc_x1 = accelerometer[0];
-		  acc_y1 = accelerometer[1];
-		  counterInitial++;
-	  }
 
-	  if(player && directionGame && (resultIndex < 4)) {
-		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] - acc_y1 > 100) {
-		  	  arrayX[arrayIndex] = (float32_t) accelerometer[0];
-		  	  arrayY[arrayIndex] = (float32_t) accelerometer[1];
-		  	  arrayIndex++;
-		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
-		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
-			  HAL_TIM_Base_Start_IT(&htim4);
-		  }
-	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -491,51 +515,6 @@ static void MX_TIM2_Init(void)
 }
 
 /**
-  * @brief TIM4 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM4_Init(void)
-{
-
-  /* USER CODE BEGIN TIM4_Init 0 */
-
-  /* USER CODE END TIM4_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM4_Init 1 */
-
-  /* USER CODE END TIM4_Init 1 */
-  htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 60000;
-  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 4000;
-  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM4_Init 2 */
-
-  /* USER CODE END TIM4_Init 2 */
-
-}
-
-/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -595,10 +574,10 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
@@ -645,7 +624,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(greenLED_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
@@ -674,31 +653,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	if (htim->Instance == htim4.Instance) { // only for timer 4
-		for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
-			arrayX[i] = 0;
-			arrayY[i] = 0;
-		}
-		if(maxX2 > maxY2) {
-			if(maxX2 > 500) {
-				directionResult[resultIndex] = 'X'; //fast horizontal
-			} else {
-				directionResult[resultIndex] = 'x'; //slow horizontal
-			}
-		} else {
-			if(maxY2 > 500) {
-				directionResult[resultIndex] = 'Y'; //fast vertical
-			} else {
-				directionResult[resultIndex] = 'y'; //slow vertical
-			}
-		}
-		resultIndex++;
-		counterRestart = 0;
-		arrayIndex = 0;
-		HAL_TIM_Base_Stop_IT(&htim4);
-	}
-}
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
@@ -739,6 +693,106 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 
 }
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartGetSpeedAndDir */
+/**
+  * @brief  Function implementing the GetSpeedAndDir thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartGetSpeedAndDir */
+void StartGetSpeedAndDir(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+    if(counterRestart == 30) {
+		for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
+			arrayX[i] = 0;
+			arrayY[i] = 0;
+		}
+		if(maxX2 > maxY2) {
+			if(maxX2 > 500) {
+				directionResult[resultIndex] = 'X'; //fast horizontal
+			} else {
+				directionResult[resultIndex] = 'x'; //slow horizontal
+			}
+		} else {
+			if(maxY2 > 500) {
+				directionResult[resultIndex] = 'Y'; //fast vertical
+			} else {
+				directionResult[resultIndex] = 'y'; //slow vertical
+			}
+		}
+		resultIndex++;
+		arrayIndex = 0;
+		startedMoving = 0;
+		counterRestart = 0;
+	  }
+  }
+  /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartAcceleroSensor */
+/**
+* @brief Function implementing the AcceleroSensor thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAcceleroSensor */
+void StartAcceleroSensor(void const * argument)
+{
+  /* USER CODE BEGIN StartAcceleroSensor */
+  BSP_ACCELERO_Init();
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+    if(player && directionGame && !counterInitial) {
+    	  osDelay(10000);
+   		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+   		  acc_x1 = accelerometer[0];
+   		  acc_y1 = accelerometer[1];
+   		  counterInitial++;
+   	  }
+    if(player && directionGame && (resultIndex < 4)) {
+   		BSP_ACCELERO_AccGetXYZ(accelerometer);
+   		if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] - acc_y1 > 100) {
+   		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
+   		  arrayY[arrayIndex] = (float32_t) accelerometer[1];
+   		  arrayIndex++;
+   		  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+   		  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+   		  startedMoving = 1;
+   		}
+   	  }
+  }
+  /* USER CODE END StartAcceleroSensor */
+}
+
+/* USER CODE BEGIN Header_StartCounterDirGame */
+/**
+* @brief Function implementing the CounterDirGame thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartCounterDirGame */
+void StartCounterDirGame(void const * argument)
+{
+  /* USER CODE BEGIN StartCounterDirGame */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+    if(startedMoving) {
+    	osDelay(100);
+    	counterRestart++;
+    }
+  }
+  /* USER CODE END StartCounterDirGame */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
