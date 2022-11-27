@@ -37,6 +37,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define ITM_Port32(n) (*((volatile unsigned long *) (0xE0000000+4*n)))
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -83,7 +85,7 @@ uint8_t directionGame = 1;
 
 // Accelerometer
 int16_t accelerometer[3];
-int16_t gyro[3];
+float gyro[3];
 
 #define sizeAccResult 4
 int acc_Result[sizeAccResult];
@@ -94,6 +96,9 @@ int16_t acc_y1;
 int16_t acc_y2;
 float32_t maxX2;
 float32_t maxY2;
+float32_t minX2;
+float32_t minY2;
+
 float32_t arrayX[2000];
 float32_t arrayY[2000];
 int16_t arrayIndex = 0;
@@ -113,6 +118,15 @@ int16_t deltaX; //percentage change
 int16_t deltaY;
 
 int8_t counterInitial = 0;
+
+
+int16_t velocityX[400];
+
+int16_t positionX[400];
+float dt = 0.0003221;
+uint32_t time[400];
+int16_t accX[400];
+int8_t indexX = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -190,41 +204,49 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  if(player && directionGame && !counterInitial) {
-//		  get_ACC_XY_InitialPosition();
-//	  }
-//
-//	  if(player && directionGame) {
-//		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-//		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
-//		  	  acc_x2 = accelerometer[0];
+	  if(player && directionGame && !counterInitial) {
+		  get_ACC_XY_InitialPosition();
+		  arrayIndex+=1;
+	  }
+
+	  if(player && directionGame) {
+		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+		  if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] -  acc_y1 > 100) {
+		  	  acc_x2 = accelerometer[0];
 //		  	  acc_y2 = accelerometer[1];
-//		  	  arrayX[arrayIndex] = (float32_t) acc_x2;
+		  	  arrayX[indexX] = (float32_t) acc_x2;
 //		  	  arrayY[arrayIndex] = (float32_t) acc_y2;
 //		  	  arrayIndex++;
 //		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
 //		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
-//		  }
-//	  }
-	  if(player && directionGame && !counterInitial) {
-	 		  get_GYRO_XYZ_InitialPosition();
-	 	  }
+//		  	  arm_min_f32(&arrayX, (uint32_t) 2000,  &minX2,  &maxIndexX);
+//		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &minY2,  &maxIndexX);
+			  velocityX[arrayIndex] = velocityX[arrayIndex-1] + (arrayX[arrayIndex] + arrayX[arrayIndex-1]) / (2 * dt) ;
+			  positionX[arrayIndex] = positionX[arrayIndex-1] + (velocityX[arrayIndex] + velocityX[arrayIndex-1]) / (2 * dt);
+			  arrayIndex++;
+			  indexX++;
 
-	 	  if(player && directionGame) {
-	 		  BSP_GYRO_GetXYZ(gyro);
-	 		  if(gyro[0]- gyro_x1  > 100 || gyro[1] -  gyro_y1 > 100) {
-	 		  	  gyro_x2 = gyro[0];
-	 		  	  gyro_y2 = gyro[1];
-	 		  	  arrayX[arrayIndex] = (float32_t) gyro_x2;
-	 		  	  arrayY[arrayIndex] = (float32_t) gyro_y2;
-	 		  	  arrayIndex++;
-	 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
-	 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
-	 		  }
-	 	  }
+
+		  }
+	  }
+//	  if(player && directionGame && !counterInitial) {
+//	 		  get_GYRO_XYZ_InitialPosition();
+//	 	  }
+//
+//	 	  if(player && directionGame) {
+//	 		  BSP_GYRO_GetXYZ(gyro);
+//	 		  if(gyro[0]- gyro_x1  > 5 || gyro[1] -  gyro_y1 > 5) {
+//	 		  	  gyro_x2 = gyro[0];
+//	 		  	  gyro_y2 = gyro[1];
+//	 		  	  arrayX[arrayIndex] = (float32_t) gyro_x2;
+//	 		  	  arrayY[arrayIndex] = (float32_t) gyro_y2;
+//	 		  	  arrayIndex++;
+//	 		  	  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+//	 		  	  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+//	 		  }
+//	 	  }
 
     /* USER CODE END WHILE */
-
 
     /* USER CODE BEGIN 3 */
   }
@@ -494,11 +516,11 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 1000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4000;
+  htim2.Init.Period = 8000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -677,19 +699,21 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 }
 
 void get_ACC_XY_InitialPosition(){
+     ITM_Port32(31) = 1;
 	 BSP_ACCELERO_AccGetXYZ(accelerometer);
-	 HAL_Delay(100);
+	 ITM_Port32(31) = 2;
 	 acc_x1 = accelerometer[0];
 	 acc_y1 = accelerometer[1];
+	 velocityX[0] = 0;
+	 positionX[0] = 0;
 	 counterInitial++;
 }
 
 void get_GYRO_XYZ_InitialPosition() {
 	 BSP_GYRO_GetXYZ(gyro);
 	 HAL_Delay(100);
-	 acc_x1 = gyro[0];
-	 acc_y1 = gyro[1];
-
+	 gyro_x1 = gyro[0];
+	 gyro_y1 = gyro[1];
 	 counterInitial++;
 }
 
