@@ -66,26 +66,29 @@ osThreadId CounterDirGameHandle;
 // Sampling rate = 20 kHz, duration = 2s, -> 40 000 samples per audio
 // We have 10 audios, int = 4 bytes ->
 #define SEQUENCE_LENGTH 40000
+#define NUMBER_OF_DIRECTION 4
+#define NUMBER_OF_DIGITS 5
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
-int32_t address[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
-
+int32_t addressDigits[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
+int32_t addressDirections[4] = {0x1E0000, 0x210000, 0x240000, 0x270000};
 uint32_t pushButtonCounter = 0;
+
+//Selecting Game Modes
 uint8_t recorder = 0;
 uint8_t player = 1;
-uint32_t test;
-uint32_t indexSeq;
-uint32_t addr = 0x000000;
-uint8_t seq[5] = {4,1,4,7,9};
-uint32_t pressed = 0;
-uint8_t j = 0;
-
-uint8_t memoryGame = 0;
 uint8_t directionGame = 1;
+uint8_t digitGame = 0;
+
+uint32_t addr = 0x000000;
+uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
+char seqDirection[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
+uint32_t pressed = 0;
+uint8_t addressDigitIndex = 0;
+uint8_t addressDirectionIndex = 0;
 
 // Accelerometer
 int16_t accelerometer[3];
-char str[100];
 int16_t acc_x1; //initial acc. x value
 int16_t acc_y1;
 float32_t maxX2;
@@ -96,7 +99,7 @@ int16_t arrayIndex = 0;
 uint32_t maxIndexX;
 uint32_t maxIndexY;
 
-char directionResult[4];
+char directionResult[NUMBER_OF_DIRECTION];
 uint32_t counterRestart;
 int8_t resultIndex = 0;
 int8_t counterInitial = 0;
@@ -166,8 +169,10 @@ int main(void)
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 
-  if(recorder) {
-	  for(int i = 1; i < 34; i++) {
+  if(recorder) { // 3 blocks per sound (digits OR directions/speed)
+	  //10 digits * 3 = 30 blocks to erase
+	  //2 directions (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
+	  for(int i = 1; i < 42; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
 		  addr = 0x010000*i;
@@ -639,57 +644,86 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		if(recorder)
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
-//		if(player) {
-//
-//			for(int i = 0 ; j < 10; i++) {
-//
-//			BSP_ACCELERO_AccGetXYZ(accelerometer);
-//			sprintf(str, "\n %.2d, %.2d, %.2d\r\n", (int) accelerometer[0], (int) accelerometer[1], (int) accelerometer[2]);
-//			UART_status = HAL_UART_Transmit(&huart1, (uint8_t *) str, (uint16_t) strlen(str), 100);
-//			if (UART_status != HAL_OK)
-//				HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
-//			}
-//		}
+		if(player && digitGame) {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		} else if(player && directionGame) {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seqDirections[addressDirectionIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		}
 	}
 }
 
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
-	if(player) {
-	j = j + 1;
-	test = address[seq[j]];
-	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[j]], sizeof(SEQUENCE)) != QSPI_OK)
-		Error_Handler();
+	if(player && digitGame) {
+		addressDigitIndex = addressDigitIndex + 1;
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+			Error_Handler();
+		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		if (addressDigitIndex == NUMBER_OF_DIGITS) {
+			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		}
+	} else if (player && directionGame) {
+		addressDirectionIndex = addressDirectionIndex + 1;
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[addressDirectionIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+			Error_Handler();
+		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-	if (j == 5) {
-		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-	}
+		if (addressDirectionIndex == NUMBER_OF_DIRECTION) {
+			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		}
 	}
 }
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
 
+	if(recorder && digitGame) {
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
-	for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
-		SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
-		if(SEQUENCE[i] < 0 ) {
-			SEQUENCE[i]= SEQUENCE[i]+ (1<<24);
+		for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
+			SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
+			if(SEQUENCE[i] < 0 ) {
+				SEQUENCE[i]= SEQUENCE[i]+ (1<<24);
+			}
+			if( SEQUENCE[i] >= 4096) {
+				SEQUENCE[i] = SEQUENCE[i] >> 12;
+			}
 		}
-		if( SEQUENCE[i] >= 4096) {
-			SEQUENCE[i] = SEQUENCE[i] >> 12;
+		if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) addressDigits[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+			Error_Handler();
 		}
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) addressDigits[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+			Error_Handler();
+		}
+		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		pushButtonCounter = (pushButtonCounter + 1) % 10;
 	}
-	if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
-		Error_Handler();
+
+
+	if(recorder && directionGame) {
+	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
+		for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
+			SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
+			if(SEQUENCE[i] < 0 ) {
+				SEQUENCE[i]= SEQUENCE[i]+ (1<<24);
+			}
+			if( SEQUENCE[i] >= 4096) {
+				SEQUENCE[i] = SEQUENCE[i] >> 12;
+			}
+		}
+		if(BSP_QSPI_Write((uint8_t *) SEQUENCE, (uint32_t) addressDirections[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+			Error_Handler();
+		}
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) addressDirections[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
+			Error_Handler();
+		}
+		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		pushButtonCounter = (pushButtonCounter + 1) % 4;
 	}
-	if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t) address[pushButtonCounter], sizeof(SEQUENCE)) != QSPI_OK){
-		Error_Handler();
-	}
-	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-	pushButtonCounter = (pushButtonCounter + 1) % 10;
 
 }
 /* USER CODE END 4 */
@@ -757,7 +791,7 @@ void StartAcceleroSensor(void const * argument)
    		  acc_y1 = accelerometer[1];
    		  counterInitial++;
    	  }
-    if(player && directionGame && (resultIndex < 4)) {
+    if(player && directionGame && (resultIndex < NUMBER_OF_DIRECTION)) {
    		BSP_ACCELERO_AccGetXYZ(accelerometer);
    		if(accelerometer[0]- acc_x1  > 100 || accelerometer[1] - acc_y1 > 100) {
    		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
