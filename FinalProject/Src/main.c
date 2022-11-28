@@ -731,7 +731,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 	if(player && digitGame) {
 		addressDigitIndex = addressDigitIndex + 1;
-		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seq[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 			Error_Handler();
 		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
@@ -893,7 +893,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
-	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seq[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 	 	  		Error_Handler();
 	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
