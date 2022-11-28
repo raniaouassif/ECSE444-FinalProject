@@ -79,6 +79,7 @@ uint8_t recorder;
 uint8_t player;
 uint8_t directionGame;
 uint8_t digitGame;
+uint8_t actualRecorder = 0;
 
 uint32_t addr = 0x000000;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
@@ -231,11 +232,14 @@ int main(void)
 
   HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);//clear console
 
+
+
+
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);// sent start message
 
   HAL_UART_Receive_IT(&huart1, start_yn, 2);// get user 1 or 0
 
-  if(recorder) { // 3 blocks per sound (digits OR seqDirections/speed)
+  if(actualRecorder) { // 3 blocks per sound (digits OR seqDirections/speed)
 	  //10 digits * 3 = 30 blocks to erase
 	  //2 seqDirections (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
 	  for(int i = 1; i < 42; i++) {
@@ -707,7 +711,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 		HAL_GPIO_TogglePin(greenLED_GPIO_Port, greenLED_Pin);
 
-		if(recorder)
+		if(actualRecorder)
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, SEQUENCE, SEQUENCE_LENGTH);
 
 		if(player && digitGame) {
@@ -724,7 +728,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 	if(player && digitGame) {
 		addressDigitIndex = addressDigitIndex + 1;
-		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
+		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seq[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 			Error_Handler();
 		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
@@ -779,7 +783,7 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter ) {
 
-	if(recorder && digitGame) {
+	if(actualRecorder && digitGame) {
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 		for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
 			SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
@@ -801,7 +805,7 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 	}
 
 
-	if(recorder && directionGame) {
+	if(actualRecorder && directionGame) {
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 		for(uint32_t i = 0 ; i < SEQUENCE_LENGTH; i++ ){
 			SEQUENCE[i] = SEQUENCE[i] >> 8; // 24 bit signed  :  −8,388,608 : 8,388,607
@@ -843,7 +847,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  directionGame = 1;
 	  digitGame = 0;
 	  HAL_UART_Transmit(&huart1, direcRecorderMessage, sizeof(direcRecorderMessage), 100);
-	  //receive the answer in digit_reply
+	  //receive the answer in direction_reply
 	  HAL_UART_Receive_IT(&huart1, direction_reply, 6);
 
 
@@ -855,24 +859,27 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	  HAL_UART_Transmit(&huart1, startPlayer2Message, sizeof(startPlayer2Message), 100);
 
-	  ////TODO: change this for N S E W
-//	  for (int i = 0; i < (sizeof(direction_reply))/(sizeof(direction_reply[0])); i++){
-//		  int_converter[i] = digit_reply[i] - '0';
-//   	  }
-//	  seq = int_converter;
-//	  strcpy(digit_answer,  digit_reply);
-	  ///////////////////////////////////////
+	  for (int i=0 ; i<NUMBER_OF_DIRECTION; i++) {
+		  seqDirections[i] = direction_reply[i];
+	  }
 
 	  direction_reply[0] = '\000';
 
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDirectionMessage, sizeof(waitForSpeakerDirectionMessage), 100);
 
 	  //send to HAL_DAC...once cmplt user should move the board
-//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-//	  					Error_Handler();
-//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
-	  HAL_UART_Receive_IT(&huart1, user_Direction_answer, 6);
+	  if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y' ) {
+		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
+			  Error_Handler();
+		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  } else if(seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
+		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
+			  Error_Handler();
+		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  }
+	  recordingDirectionIndex++;
+
   }
 
 
@@ -907,9 +914,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
-//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-//	  					Error_Handler();
-//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+	  					Error_Handler();
+	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 
 	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
@@ -944,9 +951,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
-//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-//	  					Error_Handler();
-//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+	  					Error_Handler();
+	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 	  //HAL_UART_Transmit(&huart1, here, sizeof(here), 100);
 
@@ -1070,7 +1077,7 @@ void StartAcceleroSensor(void const * argument)
    		  startedMoving = 1;
    		}
    	  }
-    if (directionResult[NUMBER_OF_DIRECTION] != '\000'){
+    if (resultIndex == NUMBER_OF_DIRECTION){
     	 res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTION);
     	 if (res == 0){
     		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
@@ -1078,7 +1085,8 @@ void StartAcceleroSensor(void const * argument)
     		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
     		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
     	 }
-    	 directionResult[NUMBER_OF_DIRECTION] = '\000';
+    	 resultIndex++;
+    	 //directionResult[NUMBER_OF_DIRECTION] = '\000';
     }
   }
   /* USER CODE END StartAcceleroSensor */
