@@ -71,15 +71,17 @@ osThreadId CounterDirGameHandle;
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
 int32_t addressDigits[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
-int32_t addressDirections[4] = {0x1E0000, 0x210000, 0x240000, 0x270000}; // HVSF
+
+// CAREFUL: Record in following order horizontal slow, horizontal fast, vertical slow, vertical fast
+int32_t addressDirections[4] = {0x1E0000, 0x210000, 0x240000, 0x270000};
 uint32_t pushButtonCounter = 0;
 
 //Selecting Game Modes
 uint8_t recorder;
 uint8_t player;
-uint8_t directionGame;
-uint8_t digitGame;
-uint8_t actualRecorder = 0;
+uint8_t directionGame = 1;
+uint8_t digitGame = 0;
+uint8_t actualRecorder = 1;
 
 uint32_t addr = 0x000000;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
@@ -131,7 +133,6 @@ uint32_t counterRestart;
 int8_t resultIndex = 0;
 int8_t counterInitial = 0;
 int8_t startedMoving = 0;
-int8_t recordingDirectionIndex = 0;
 
 ///MESSAGES
 uint8_t startMessage[] = "Let's Test Your Memory! \r\n"
@@ -737,42 +738,23 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 			HAL_UART_Transmit(&huart1, startTypingMessage, sizeof(startTypingMessage), 100);
 		}
 	} else if (player && directionGame) {
-		if(addressDirectionIndex == 0) {
-			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'X') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			} else if (seqDirections[addressDirectionIndex] == 'y' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
-			recordingDirectionIndex++;
-		}
 		addressDirectionIndex = addressDirectionIndex + 1;
-		if(addressDirectionIndex % recordingDirectionIndex == 0 ) {
-			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				recordingDirectionIndex++;
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			} else if (seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
-			recordingDirectionIndex++;
-		} else if (addressDirectionIndex % recordingDirectionIndex == 1) {
-			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'X') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			} else if (seqDirections[addressDirectionIndex] == 'y' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
-					Error_Handler();
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-			}
-			recordingDirectionIndex++;
+		if(seqDirections[addressDirectionIndex] == 'X') {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		}else if(seqDirections[addressDirectionIndex] == 'Y') {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		}else if(seqDirections[addressDirectionIndex] == 'x') {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+		}else if(seqDirections[addressDirectionIndex] == 'y') {
+			if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
+				Error_Handler();
+			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 		}
 		if (addressDirectionIndex == NUMBER_OF_DIRECTION) {
 			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
@@ -878,8 +860,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			  Error_Handler();
 		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 	  }
-	  recordingDirectionIndex++;
-
   }
 
 
@@ -972,9 +952,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
 		  HAL_UART_Transmit(&huart1, digit_answer, sizeof(digit_answer), 100);
 	  }
-
 	  user_Digit_answer[0] = '\000';
-
   }
 
   ////////////////// PLATER Direction //////////////////////////////////////
@@ -985,22 +963,28 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  directionGame = 1;
 	  digitGame = 0;
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDirectionMessage, sizeof(waitForSpeakerDirectionMessage), 100);
-	  if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y' ) {
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
-			  Error_Handler();
-		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-	  } else if(seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
-			  Error_Handler();
-		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  if(seqDirections[addressDirectionIndex] == 'X') {
+	  		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
+	  			Error_Handler();
+	  		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  }else if(seqDirections[addressDirectionIndex] == 'Y') {
+	  		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
+	  			Error_Handler();
+	  		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  }else if(seqDirections[addressDirectionIndex] == 'x') {
+	  		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
+	  			Error_Handler();
+	  		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+	  }else if(seqDirections[addressDirectionIndex] == 'y') {
+	  		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
+	  			Error_Handler();
+	  		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 	  }
-	  recordingDirectionIndex++;
   }
-
   ///// might not need this
   //check the answer for seqDirections
-
 }
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartGetSpeedAndDir */
