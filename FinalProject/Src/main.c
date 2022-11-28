@@ -79,11 +79,11 @@ uint32_t pushButtonCounter = 0;
 //Selecting Game Modes
 uint8_t recorder;
 uint8_t player;
-uint8_t directionGame = 1;
-uint8_t digitGame = 0;
-uint8_t actualRecorder = 1;
+uint8_t directionGame;
+uint8_t digitGame;
+uint8_t actualRecorder;
 
-uint32_t addr = 0x000000;
+uint32_t addr;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
 uint8_t seqDirections[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
 uint32_t pressed = 0;
@@ -233,20 +233,25 @@ int main(void)
 
   HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);//clear console
 
-
-
-
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);// sent start message
 
   HAL_UART_Receive_IT(&huart1, start_yn, 2);// get user 1 or 0
 
-  if(actualRecorder) { // 3 blocks per sound (digits OR seqDirections/speed)
+  if(actualRecorder && digitGame) { // 3 blocks per sound (digits OR seqDirections/speed)
 	  //10 digits * 3 = 30 blocks to erase
 	  //2 seqDirections (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
-	  for(int i = 1; i < 42; i++) {
+	  addr = 0x000000;
+	  for(int i = 1; i < 30; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
-		  addr = 0x010000*i;
+		  addr+= 0x010000;
+	  }
+  } else if( actualRecorder && directionGame) {
+	  addr = 0x1E0000;
+	  for(int i = 1; i < 12; i++) {
+		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
+		  	Error_Handler();
+		  addr += 0x010000;
 	  }
   }
 
@@ -869,10 +874,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  directionGame = 0;
 	  digitGame = 1;
 	  HAL_UART_Transmit(&huart1, recorderMessage, sizeof(recorderMessage), 100);
-
 	  //receive the answer in digit_reply
 	  HAL_UART_Receive_IT(&huart1, digit_reply, 6);
-
   }
 
 
@@ -881,7 +884,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
 
 	  HAL_UART_Transmit(&huart1, startPlayer2Message, sizeof(startPlayer2Message), 100);
-
 
 	  for (int i = 0; i < (sizeof(digit_reply))/(sizeof(digit_reply[0])); i++){
 		  int_converter[i] = digit_reply[i] - '0';
