@@ -68,6 +68,7 @@ osThreadId CounterDirGameHandle;
 #define SEQUENCE_LENGTH 40000
 #define NUMBER_OF_DIRECTION 4
 #define NUMBER_OF_DIGITS 5
+#define CHOICE 2
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
 int32_t addressDigits[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
@@ -160,7 +161,7 @@ uint8_t startTypingMessage[] = "Enter what you remember: \r\n";
 uint8_t startPlayer2Message[] = "Player 2 \r\n";
 
 uint8_t recorderMessage[] = "Begin typing the 5 digits you want player 2 to memorize \r\n";
-uint8_t direcRecorderMessage[] = "Begin typing the 5 coordinates you want player 2 to memorize \r\n";
+uint8_t direcRecorderMessage[] = "Begin typing the 4 coordinates you want player 2 to memorize \r\n";
 
 uint8_t clearCommand[] =  "\033[1J";
 
@@ -235,7 +236,7 @@ int main(void)
 
   HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);// sent start message
 
-  HAL_UART_Receive_IT(&huart1, start_yn, 2);// get user 1 or 0
+  HAL_UART_Receive_IT(&huart1, start_yn, CHOICE);// get user 1 or 0
 
   if(actualRecorder && digitGame) { // 3 blocks per sound (digits OR seqDirections/speed)
 	  //10 digits * 3 = 30 blocks to erase
@@ -820,11 +821,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  //you are a recorder (player 1)
 	  recorder = 1;
 	  player = 0;
-	  memset(start_yn,0,2);
+	  memset(start_yn,0,CHOICE);
 	  // send player message
 	  HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
 	  //game mode 0 or 1
-	  HAL_UART_Receive_IT(&huart1, recorder_game_mode, 2);
+	  HAL_UART_Receive_IT(&huart1, recorder_game_mode, CHOICE);
   }
 
   if (recorder_game_mode[0] == '1'){
@@ -832,7 +833,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  digitGame = 0;
 	  HAL_UART_Transmit(&huart1, direcRecorderMessage, sizeof(direcRecorderMessage), 100);
 	  //receive the answer in direction_reply
-	  HAL_UART_Receive_IT(&huart1, direction_reply, 6);
+	  HAL_UART_Receive_IT(&huart1, direction_reply, NUMBER_OF_DIRECTION+1);
 
 
   }
@@ -872,7 +873,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  digitGame = 1;
 	  HAL_UART_Transmit(&huart1, recorderMessage, sizeof(recorderMessage), 100);
 	  //receive the answer in digit_reply
-	  HAL_UART_Receive_IT(&huart1, digit_reply, 6);
+	  HAL_UART_Receive_IT(&huart1, digit_reply, NUMBER_OF_DIGITS+1);
   }
 
 
@@ -898,7 +899,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 
-	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
+	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, NUMBER_OF_DIGITS+1);
 
   }
   /////////////////////////////////////////////////////////////
@@ -907,14 +908,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if (start_yn[0] == '1'){
 	  //you are a player (player 2)
 	  //game mode 0 or game mode 1
-	  memset(start_yn,0,2);
+	  memset(start_yn,0,CHOICE);
 	  player = 1 ;
 	  recorder = 0;
 	  // send player message
 	  HAL_UART_Transmit(&huart1, playerMessage, sizeof(playerMessage), 100);
 	  HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
 
-	  HAL_UART_Receive_IT(&huart1, game_mode, 2);
+	  HAL_UART_Receive_IT(&huart1, game_mode, CHOICE);
   }
 
 
@@ -926,7 +927,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  seq = seqDigits;
 	  directionGame = 0 ;
 	  digitGame = 1;
-	  memset(game_mode,0,2);
+	  memset(game_mode,0,CHOICE);
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
@@ -941,14 +942,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	  //HAL_UART_Transmit(&huart1, here, sizeof(here), 100);
 
-	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
+	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, NUMBER_OF_DIGITS+1);
   }
 
 
   //check the answer for digits
   if (user_Digit_answer[0] != '\000'){
 
-	  res= strncmp(user_Digit_answer, digit_answer, 5);
+	  res= strncmp(user_Digit_answer, digit_answer, NUMBER_OF_DIGITS);
 	  if (res == 0){
 		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
 	  }
