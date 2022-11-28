@@ -82,36 +82,10 @@ uint8_t digitGame = 0;
 
 uint32_t addr = 0x000000;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
-uint8_t seqDirections[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
+char seqDirections[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
 uint32_t pressed = 0;
 uint8_t addressDigitIndex = 0;
 uint8_t addressDirectionIndex = 0;
-// LEONIDAS VARIABLES
-//DIGITS
-uint8_t res;
-uint8_t *seq;
-uint8_t digits[] = "41479";
-uint8_t digit_answer[NUMBER_OF_DIGITS +1];
-
-//DIRECTIONS
-uint8_t direction_answer[6];
-//uint8_t seqDirections[]= "XxYy";
-
-//UART
-uint8_t start_yn[2];//player 1 or 2 answer
-uint8_t recorded_digits[6];//user types the desired numbers here
-uint8_t game_mode[2];//game mode 1 or 0 answer
-uint8_t recorder_game_mode[2];//game mode 1 or 0 answer
-
-uint8_t digit_reply[6];
-uint8_t digit_ready[2];
-uint8_t int_converter[6];
-
-uint8_t direction_reply[6];
-uint8_t digit_ready[2];
-
-uint8_t user_Digit_answer[6];
-uint8_t user_Direction_answer[6];
 
 // Accelerometer
 int16_t accelerometer[3];
@@ -131,39 +105,6 @@ int8_t resultIndex = 0;
 int8_t counterInitial = 0;
 int8_t startedMoving = 0;
 int8_t recordingDirectionIndex = 0;
-
-///MESSAGES
-uint8_t startMessage[] = "Let's Test Your Memory! \r\n"
-					   "Have you played before?\r\n"
-					   "1: Yes \r\n"
-					   "0: No \r\n";
-
-uint8_t playerMessage[] = "Then, proceed to choose the game mode! \r\n";
-
-uint8_t chooseModeMessage[] = "Choose The Game Mode: \r\n"
-							"0: Memory Digits \r\n"
-							"1: Memory Directions \r\n";
-
-uint8_t waitForSpeakerDigitMessage[] = "Starting Memory Digits..\r\nPlaying numbers..wait until completion!\r\n";
-uint8_t waitForSpeakerDirectionMessage[] = "Starting Memory Directions..\r\nPlaying seqDirections..wait until completion!\r\n";
-
-uint8_t winMessage[] = "You got it right! \r\n";
-
-uint8_t lossMessage[] = "You got it wrong! \r\n"
-		               "Game over!\r\n"
-					   "The answer was:\r\n";
-
-uint8_t startTypingMessage[] = "Enter what you remember: \r\n";
-
-uint8_t startPlayer2Message[] = "Player 2 \r\n";
-
-uint8_t recorderMessage[] = "Begin typing the 5 digits you want player 2 to memorize \r\n";
-uint8_t direcRecorderMessage[] = "Begin typing the 5 coordinates you want player 2 to memorize \r\n";
-
-uint8_t clearCommand[] =  "\033[1J";
-
-uint8_t here[] =  "HERE_____\r\n";
-//END MESSAGES
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -229,9 +170,9 @@ int main(void)
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
 
-  if(recorder) { // 3 blocks per sound (digits OR seqDirections/speed)
+  if(recorder) { // 3 blocks per sound (digits OR directions/speed)
 	  //10 digits * 3 = 30 blocks to erase
-	  //2 seqDirections (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
+	  //2 directions (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
 	  for(int i = 1; i < 42; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
@@ -709,13 +650,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 				Error_Handler();
 			HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 		} else if(player && directionGame) {
-
+			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y' ) {
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[2]], sizeof(SEQUENCE)) != QSPI_OK)
+					Error_Handler();
+				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+			}
+			else if(seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[3]], sizeof(SEQUENCE)) != QSPI_OK)
+					Error_Handler();
+				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+			}
+			recordingDirectionIndex++;
 		}
 	}
 }
 
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+
 	if(player && digitGame) {
 		addressDigitIndex = addressDigitIndex + 1;
 		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
@@ -724,16 +676,15 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 		if (addressDigitIndex == NUMBER_OF_DIGITS) {
 			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-			HAL_UART_Transmit(&huart1, startTypingMessage, sizeof(startTypingMessage), 100);
 		}
 	} else if (player && directionGame) {
 		if(addressDirectionIndex == 0) {
 			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'X') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[0]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			} else if (seqDirections[addressDirectionIndex] == 'y' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[1]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			}
@@ -742,31 +693,27 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 		addressDirectionIndex = addressDirectionIndex + 1;
 		if(addressDirectionIndex % recordingDirectionIndex == 0 ) {
 			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[2]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				recordingDirectionIndex++;
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			} else if (seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[3]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			}
 			recordingDirectionIndex++;
 		} else if (addressDirectionIndex % recordingDirectionIndex == 1) {
 			if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'X') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[0], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[0]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			} else if (seqDirections[addressDirectionIndex] == 'y' || seqDirections[addressDirectionIndex] == 'Y') {
-				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[1], sizeof(SEQUENCE)) != QSPI_OK)
+				if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[seqDirections[1]], sizeof(SEQUENCE)) != QSPI_OK)
 					Error_Handler();
 				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 			}
 			recordingDirectionIndex++;
-		}
-		if (addressDirectionIndex == NUMBER_OF_DIRECTIONS) {
-			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-			HAL_UART_Transmit(&huart1, startTypingMessage, sizeof(startTypingMessage), 100);
 		}
 	}
 }
@@ -816,186 +763,6 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
 		pushButtonCounter = (pushButtonCounter + 1) % 4;
 	}
 
-}
-
-//get the data byte by byte
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-
-  if (start_yn[0] == '0'){
-	  //you are a recorder (player 1)
-	  recorder = 1;
-	  player = 0;
-	  memset(start_yn,0,2);
-	  // send player message
-	  HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
-	  //game mode 0 or 1
-	  HAL_UART_Receive_IT(&huart1, recorder_game_mode, 2);
-  }
-
-  if (recorder_game_mode[0] == '1'){
-	  directionGame = 1;
-	  digitGame = 0;
-	  HAL_UART_Transmit(&huart1, direcRecorderMessage, sizeof(direcRecorderMessage), 100);
-	  //receive the answer in digit_reply
-	  HAL_UART_Receive_IT(&huart1, direction_reply, 6);
-
-
-  }
-
-  if (direction_reply[0] != '\000'){
-
-	  HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
-
-	  HAL_UART_Transmit(&huart1, startPlayer2Message, sizeof(startPlayer2Message), 100);
-
-	  ////TODO: change this for N S E W
-//	  for (int i = 0; i < (sizeof(direction_reply))/(sizeof(direction_reply[0])); i++){
-//		  int_converter[i] = digit_reply[i] - '0';
-//   	  }
-//	  seq = int_converter;
-//	  strcpy(digit_answer,  digit_reply);
-	  ///////////////////////////////////////
-
-	  direction_reply[0] = '\000';
-
-	  HAL_UART_Transmit(&huart1, waitForSpeakerDirectionMessage, sizeof(waitForSpeakerDirectionMessage), 100);
-
-	  //send to HAL_DAC...once cmplt user should move the board
-//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-//	  					Error_Handler();
-//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-
-	  HAL_UART_Receive_IT(&huart1, user_Direction_answer, 6);
-  }
-
-
-  /////////////// Recorder Digits ////////////////////////
-  if (recorder_game_mode[0] == '0'){
-	  memset(recorder_game_mode,0,2);
-	  directionGame = 0;
-	  digitGame = 1;
-	  HAL_UART_Transmit(&huart1, recorderMessage, sizeof(recorderMessage), 100);
-
-	  //receive the answer in digit_reply
-	  HAL_UART_Receive_IT(&huart1, digit_reply, 6);
-
-  }
-
-
-  if (digit_reply[0] != '\000'){
-
-	  HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);
-
-	  HAL_UART_Transmit(&huart1, startPlayer2Message, sizeof(startPlayer2Message), 100);
-
-
-	  for (int i = 0; i < (sizeof(digit_reply))/(sizeof(digit_reply[0])); i++){
-		  int_converter[i] = digit_reply[i] - '0';
-   	  }
-	  seq = int_converter;
-	  strcpy(digit_answer,  digit_reply);
-
-	  digit_reply[0] = '\000';
-
-	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
-
-	  //send to HAL_DAC...once cmplt should ask user to start typing
-	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-	  					Error_Handler();
-	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-
-
-	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
-
-  }
-  /////////////////////////////////////////////////////////////
-
-
-  if (start_yn[0] == '1'){
-	  //you are a player (player 2)
-	  //game mode 0 or game mode 1
-	  memset(start_yn,0,2);
-	  player = 1 ;
-	  recorder = 0;
-	  // send player message
-	  HAL_UART_Transmit(&huart1, playerMessage, sizeof(playerMessage), 100);
-	  HAL_UART_Transmit(&huart1, chooseModeMessage, sizeof(chooseModeMessage), 100);
-
-	  HAL_UART_Receive_IT(&huart1, game_mode, 2);
-  }
-
-
-/////////////////////// PLAYER Digit ////////////////////////
-  if (game_mode[0] == '0'){
-	  //you chose game mode 0 (Digits)
-	  //get ready to hear the digits
-	  strcpy(digit_answer,  digits);
-	  seq = seqDigits;
-	  directionGame = 0 ;
-	  digitGame = 1;
-	  memset(game_mode,0,2);
-	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
-
-	  //send to HAL_DAC...once cmplt should ask user to start typing
-	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-	  					Error_Handler();
-	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-
-	  //HAL_UART_Transmit(&huart1, here, sizeof(here), 100);
-
-	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
-  }
-
-
-  //check the answer for digits
-  if (user_Digit_answer[0] != '\000'){
-
-	  res= strncmp(user_Digit_answer, digit_answer, 5);
-	  if (res == 0){
-		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
-	  }
-	  else{
-		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
-		  HAL_UART_Transmit(&huart1, digit_answer, sizeof(digit_answer), 100);
-	  }
-
-	  user_Digit_answer[0] = '\000';
-
-  }
-
-  ////////////////// PLATER Direction //////////////////////////////////////
-  if (game_mode[0] == '1'){
-	  //you chose game mode 1 (Directions)
-	  //get ready to hear the seqDirections
-	  memset(game_mode,0,2);
-	  directionGame = 1;
-	  digitGame = 0;
-	  HAL_UART_Transmit(&huart1, waitForSpeakerDirectionMessage, sizeof(waitForSpeakerDirectionMessage), 100);
-	  if(seqDirections[addressDirectionIndex] == 'x' || seqDirections[addressDirectionIndex] == 'y' ) {
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[2], sizeof(SEQUENCE)) != QSPI_OK)
-			  Error_Handler();
-		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-	  } else if(seqDirections[addressDirectionIndex] == 'X' || seqDirections[addressDirectionIndex] == 'Y') {
-		  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDirections[3], sizeof(SEQUENCE)) != QSPI_OK)
-			  Error_Handler();
-		  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
-	  }
-	  recordingDirectionIndex++;
-  }
-
-  ///// might not need this
-  //check the answer for seqDirections
-  if (directionResult[NUMBER_OF_DIRECTIONS] != '\000'){
-	  res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTIONS);
-	  if (res == 0){
-		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
-	  } else{
-		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
-		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
-	  }
-	  user_Direction_answer[NUMBER_OF_DIRECTIONS] = '\000';
-  }
 }
 /* USER CODE END 4 */
 
