@@ -75,10 +75,10 @@ int32_t addressDirections[4] = {0x1E0000, 0x210000, 0x240000, 0x270000}; // HVSF
 uint32_t pushButtonCounter = 0;
 
 //Selecting Game Modes
-uint8_t recorder = 0;
-uint8_t player = 1;
-uint8_t directionGame = 1;
-uint8_t digitGame = 0;
+uint8_t recorder;
+uint8_t player;
+uint8_t directionGame;
+uint8_t digitGame;
 
 uint32_t addr = 0x000000;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
@@ -228,6 +228,12 @@ int main(void)
   BSP_ACCELERO_Init();
   BSP_QSPI_Init();
   HAL_TIM_Base_Start_IT(&htim2);
+
+  HAL_UART_Transmit(&huart1, clearCommand, sizeof(clearCommand), 100);//clear console
+
+  HAL_UART_Transmit(&huart1, startMessage, sizeof(startMessage), 100);// sent start message
+
+  HAL_UART_Receive_IT(&huart1, start_yn, 2);// get user 1 or 0
 
   if(recorder) { // 3 blocks per sound (digits OR seqDirections/speed)
 	  //10 digits * 3 = 30 blocks to erase
@@ -764,7 +770,7 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 			}
 			recordingDirectionIndex++;
 		}
-		if (addressDirectionIndex == NUMBER_OF_DIRECTIONS) {
+		if (addressDirectionIndex == NUMBER_OF_DIRECTION) {
 			HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 			HAL_UART_Transmit(&huart1, startTypingMessage, sizeof(startTypingMessage), 100);
 		}
@@ -901,9 +907,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
-	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-	  					Error_Handler();
-	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+//	  					Error_Handler();
+//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 
 	  HAL_UART_Receive_IT(&huart1, user_Digit_answer, 6);
@@ -938,9 +944,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  HAL_UART_Transmit(&huart1, waitForSpeakerDigitMessage, sizeof(waitForSpeakerDigitMessage), 100);
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
-	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
-	  					Error_Handler();
-	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
+//	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  address[seq[0]], sizeof(SEQUENCE)) != QSPI_OK)
+//	  					Error_Handler();
+//	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 	  //HAL_UART_Transmit(&huart1, here, sizeof(here), 100);
 
@@ -986,16 +992,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
   ///// might not need this
   //check the answer for seqDirections
-  if (directionResult[NUMBER_OF_DIRECTIONS] != '\000'){
-	  res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTIONS);
-	  if (res == 0){
-		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
-	  } else{
-		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
-		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
-	  }
-	  user_Direction_answer[NUMBER_OF_DIRECTIONS] = '\000';
-  }
+
 }
 /* USER CODE END 4 */
 
@@ -1073,6 +1070,16 @@ void StartAcceleroSensor(void const * argument)
    		  startedMoving = 1;
    		}
    	  }
+    if (directionResult[NUMBER_OF_DIRECTION] != '\000'){
+    	 res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTION);
+    	 if (res == 0){
+    		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
+    	 }else{
+    		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
+    		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
+    	 }
+    	 directionResult[NUMBER_OF_DIRECTION] = '\000';
+    }
   }
   /* USER CODE END StartAcceleroSensor */
 }
