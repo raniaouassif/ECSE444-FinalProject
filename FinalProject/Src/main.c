@@ -83,7 +83,7 @@ uint8_t recorder;
 uint8_t player;
 uint8_t directionGame;
 uint8_t digitGame ;
-uint8_t actualRecorder ;
+uint8_t actualRecorder;
 
 uint32_t addr;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
@@ -891,9 +891,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	  HAL_UART_Transmit(&huart1, startPlayer2Message, sizeof(startPlayer2Message), 100);
 
+
+	  for (int i = 0; i < (sizeof(digit_reply))/(sizeof(digit_reply[0])); i++){
+		  int_converter[i] = digit_reply[i] - '0';
+   	  }
+
 	  for (int i=0 ; i<NUMBER_OF_DIGITS; i++) {
-	 		  seqDigits[i] = digit_reply[i];
-	 	  }
+	 		  seqDigits[i] = int_converter[i];
+	  }
+	  strcpy(digit_answer,  digit_reply);
 
 	  player = 1;
 	  digit_reply[0] = '\000';
@@ -902,7 +908,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	  //send to HAL_DAC...once cmplt should ask user to start typing
 	  if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
-	 	  		Error_Handler();
+	  		Error_Handler();
 	  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) SEQUENCE_COPY, SEQUENCE_LENGTH, DAC_ALIGN_12B_R);
 
 

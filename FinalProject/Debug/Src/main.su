@@ -11,8 +11,8 @@
 ../Src/main.c:717:6:HAL_GPIO_EXTI_Callback	16	static
 ../Src/main.c:728:6:HAL_DAC_ConvCpltCallbackCh1	24	static
 ../Src/main.c:765:6:HAL_DFSDM_FilterRegConvCpltCallback	32	static
-../Src/main.c:816:6:HAL_UART_RxCpltCallback	32	static
-../Src/main.c:1009:6:StartGetSpeedAndDir	24	static
-../Src/main.c:1050:6:StartAcceleroSensor	16	static
-../Src/main.c:1099:6:StartCounterDirGame	16	static
-../Src/main.c:1118:6:Error_Handler	4	static,ignoring_inline_asm
+../Src/main.c:816:6:HAL_UART_RxCpltCallback	40	static
+../Src/main.c:1015:6:StartGetSpeedAndDir	24	static
+../Src/main.c:1056:6:StartAcceleroSensor	16	static
+../Src/main.c:1105:6:StartCounterDirGame	16	static
+../Src/main.c:1124:6:Error_Handler	4	static,ignoring_inline_asm
