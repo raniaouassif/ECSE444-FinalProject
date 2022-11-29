@@ -70,6 +70,8 @@ osThreadId CounterDirGameHandle;
 #define NUMBER_OF_DIGITS 5
 #define CHOICE 2
 #define MOVEMENT_THRESHOLD 80
+#define ITM_Port32(n) (*((volatile unsigned long *) (0xE0000000+4*n)))
+
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
 int32_t addressDigits[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
@@ -82,12 +84,12 @@ uint32_t pushButtonCounter = 0;
 uint8_t recorder;
 uint8_t player;
 uint8_t directionGame;
-uint8_t digitGame ;
-uint8_t actualRecorder;
+uint8_t digitGame;
+uint8_t actualRecorder =0;
 
 uint32_t addr;
 uint8_t seqDigits[NUMBER_OF_DIGITS] = {4,1,4,7,9};
-uint8_t seqDirections[NUMBER_OF_DIRECTION] = {'X', 'x', 'Y', 'y'};
+uint8_t seqDirections[NUMBER_OF_DIRECTION] = {'X', 'Y', 'y', 'x'};
 uint32_t pressed = 0;
 uint8_t addressDigitIndex = 0;
 uint8_t addressDirectionIndex = 0;
@@ -243,14 +245,14 @@ int main(void)
 	  //10 digits * 3 = 30 blocks to erase
 	  //2 seqDirections (vertical/horizontal) + 2 speeds (fast/slow) = 4 *3 = 12
 	  addr = 0x000000;
-	  for(int i = 1; i < 30; i++) {
+	  for(int i = 1; i <= 30; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
 		  addr+= 0x010000;
 	  }
   } else if( actualRecorder && directionGame) {
 	  addr = 0x1E0000;
-	  for(int i = 1; i < 12; i++) {
+	  for(int i = 1; i <= 12; i++) {
 		  if(BSP_QSPI_Erase_Block((uint32_t) addr) != QSPI_OK)
 		  	Error_Handler();
 		  addr += 0x010000;
@@ -727,6 +729,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 	if(player && digitGame) {
+		HAL_Delay(10000);
 		addressDigitIndex = addressDigitIndex + 1;
 		if(BSP_QSPI_Read((uint8_t *) SEQUENCE_COPY, (uint32_t)  addressDigits[seqDigits[addressDigitIndex]], sizeof(SEQUENCE)) != QSPI_OK)
 			Error_Handler();
@@ -1038,6 +1041,7 @@ void StartGetSpeedAndDir(void const * argument)
 			}
 		}
 		resultIndex++;
+	    //ITM_Port32(31) = 7;
 		arrayIndex = 0;
 		startedMoving = 0;
 		counterRestart = 0;
@@ -1063,14 +1067,20 @@ void StartAcceleroSensor(void const * argument)
     osDelay(1);
     if(player && directionGame && !counterInitial) {
     	  osDelay(10000);
+    	  ITM_Port32(31) = 1;
    		  BSP_ACCELERO_AccGetXYZ(accelerometer);
    		  acc_x1 = accelerometer[0];
    		  acc_y1 = accelerometer[1];
+    	  ITM_Port32(31) = 2;
+
    		  counterInitial++;
    	  }
     if(player && directionGame && (resultIndex < NUMBER_OF_DIRECTION)) {
    		BSP_ACCELERO_AccGetXYZ(accelerometer);
    		if(accelerometer[0]- acc_x1  > MOVEMENT_THRESHOLD || accelerometer[1] - acc_y1 > MOVEMENT_THRESHOLD) {
+//   		  if(!counterRestart) {
+//   	    	ITM_Port32(31) = 5;
+//   		  }
    		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
    		  arrayY[arrayIndex] = (float32_t) accelerometer[1];
    		  arrayIndex++;
