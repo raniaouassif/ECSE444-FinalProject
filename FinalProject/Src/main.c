@@ -70,6 +70,8 @@ osThreadId CounterDirGameHandle;
 #define NUMBER_OF_DIGITS 5
 #define CHOICE 2
 #define MOVEMENT_THRESHOLD 80
+#define ITM_Port32(n) (*((volatile unsigned long *) (0xE0000000+4*n)))
+
 int32_t SEQUENCE[SEQUENCE_LENGTH];
 int32_t SEQUENCE_COPY[SEQUENCE_LENGTH];
 int32_t addressDigits[10] = {0x000000, 0x030000, 0x060000, 0x090000, 0x0C0000, 0x0F0000, 0x120000, 0x150000, 0x180000, 0x1B0000};
@@ -190,7 +192,6 @@ void StartCounterDirGame(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void get_ACC_XY_InitialPosition();
 /* USER CODE END 0 */
 
 /**
@@ -277,23 +278,23 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of GetSpeedAndDir */
-  osThreadDef(GetSpeedAndDir, StartGetSpeedAndDir, osPriorityNormal, 0, 128);
-  GetSpeedAndDirHandle = osThreadCreate(osThread(GetSpeedAndDir), NULL);
-
-  /* definition and creation of AcceleroSensor */
-  osThreadDef(AcceleroSensor, StartAcceleroSensor, osPriorityIdle, 0, 128);
-  AcceleroSensorHandle = osThreadCreate(osThread(AcceleroSensor), NULL);
-
-  /* definition and creation of CounterDirGame */
-  osThreadDef(CounterDirGame, StartCounterDirGame, osPriorityIdle, 0, 128);
-  CounterDirGameHandle = osThreadCreate(osThread(CounterDirGame), NULL);
+//  osThreadDef(GetSpeedAndDir, StartGetSpeedAndDir, osPriorityNormal, 0, 128);
+//  GetSpeedAndDirHandle = osThreadCreate(osThread(GetSpeedAndDir), NULL);
+//
+//  /* definition and creation of AcceleroSensor */
+//  osThreadDef(AcceleroSensor, StartAcceleroSensor, osPriorityIdle, 0, 128);
+//  AcceleroSensorHandle = osThreadCreate(osThread(AcceleroSensor), NULL);
+//
+//  /* definition and creation of CounterDirGame */
+//  osThreadDef(CounterDirGame, StartCounterDirGame, osPriorityIdle, 0, 128);
+//  CounterDirGameHandle = osThreadCreate(osThread(CounterDirGame), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
-  osKernelStart();
+//  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
@@ -302,7 +303,67 @@ int main(void)
   {
 
     /* USER CODE END WHILE */
+	if(startedMoving) {
+	     HAL_Delay(100);
+	     counterRestart++;
+	}
 
+	if(player && directionGame && !counterInitial) {
+	    	  HAL_Delay(10000);
+	   		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+	   		  acc_x1 = accelerometer[0];
+	   		  acc_y1 = accelerometer[1];
+	   		  counterInitial++;
+	   	  }
+	    if(player && directionGame && (resultIndex < NUMBER_OF_DIRECTION)) {
+	   		BSP_ACCELERO_AccGetXYZ(accelerometer);
+	   		if(accelerometer[0]- acc_x1  > MOVEMENT_THRESHOLD || accelerometer[1] - acc_y1 > MOVEMENT_THRESHOLD) {
+	   	      if(!counterRestart)
+	   	    	  	 ITM_Port32(31) = 5;
+	   		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
+	   		  arrayY[arrayIndex] = (float32_t) accelerometer[1];
+	   		  arrayIndex++;
+	   		  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+	   		  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+	   		  startedMoving = 1;
+	   		}
+	   	  }
+	    if (resultIndex == NUMBER_OF_DIRECTION){
+	    	 res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTION);
+	    	 if (res == 0){
+	    		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
+	    	 }else{
+	    		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
+	    		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
+	    	 }
+	    	 resultIndex++;
+	    	 //directionResult[NUMBER_OF_DIRECTION] = '\000';
+	    }
+
+	    if(counterRestart == 30) {
+			for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
+				arrayX[i] = 0;
+				arrayY[i] = 0;
+			}
+			if(maxX2 > maxY2) {
+				if(maxX2 > 500) {
+					directionResult[resultIndex] = 'X'; //fast horizontal
+				} else {
+					directionResult[resultIndex] = 'x'; //slow horizontal
+				}
+			} else {
+				if(maxY2 > 500) {
+					directionResult[resultIndex] = 'Y'; //fast vertical
+				} else {
+					directionResult[resultIndex] = 'y'; //slow vertical
+				}
+			}
+	    	ITM_Port32(31) = 7;
+			resultIndex++;
+			arrayIndex = 0;
+			startedMoving = 0;
+			counterRestart = 0;
+		  }
     /* USER CODE BEGIN 3 */
   }
 
@@ -1019,29 +1080,29 @@ void StartGetSpeedAndDir(void const * argument)
   for(;;)
   {
     osDelay(1);
-    if(counterRestart == 30) {
-		for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
-			arrayX[i] = 0;
-			arrayY[i] = 0;
-		}
-		if(maxX2 > maxY2) {
-			if(maxX2 > 500) {
-				directionResult[resultIndex] = 'X'; //fast horizontal
-			} else {
-				directionResult[resultIndex] = 'x'; //slow horizontal
-			}
-		} else {
-			if(maxY2 > 500) {
-				directionResult[resultIndex] = 'Y'; //fast vertical
-			} else {
-				directionResult[resultIndex] = 'y'; //slow vertical
-			}
-		}
-		resultIndex++;
-		arrayIndex = 0;
-		startedMoving = 0;
-		counterRestart = 0;
-	  }
+//    if(counterRestart == 30) {
+//		for(int i = 0 ; i < arrayIndex; i ++) { //reinitializing arrays
+//			arrayX[i] = 0;
+//			arrayY[i] = 0;
+//		}
+//		if(maxX2 > maxY2) {
+//			if(maxX2 > 500) {
+//				directionResult[resultIndex] = 'X'; //fast horizontal
+//			} else {
+//				directionResult[resultIndex] = 'x'; //slow horizontal
+//			}
+//		} else {
+//			if(maxY2 > 500) {
+//				directionResult[resultIndex] = 'Y'; //fast vertical
+//			} else {
+//				directionResult[resultIndex] = 'y'; //slow vertical
+//			}
+//		}
+//		resultIndex++;
+//		arrayIndex = 0;
+//		startedMoving = 0;
+//		counterRestart = 0;
+//	  }
   }
   /* USER CODE END 5 */
 }
@@ -1053,46 +1114,46 @@ void StartGetSpeedAndDir(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartAcceleroSensor */
-void StartAcceleroSensor(void const * argument)
-{
-  /* USER CODE BEGIN StartAcceleroSensor */
-  BSP_ACCELERO_Init();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-    if(player && directionGame && !counterInitial) {
-    	  osDelay(10000);
-   		  BSP_ACCELERO_AccGetXYZ(accelerometer);
-   		  acc_x1 = accelerometer[0];
-   		  acc_y1 = accelerometer[1];
-   		  counterInitial++;
-   	  }
-    if(player && directionGame && (resultIndex < NUMBER_OF_DIRECTION)) {
-   		BSP_ACCELERO_AccGetXYZ(accelerometer);
-   		if(accelerometer[0]- acc_x1  > MOVEMENT_THRESHOLD || accelerometer[1] - acc_y1 > MOVEMENT_THRESHOLD) {
-   		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
-   		  arrayY[arrayIndex] = (float32_t) accelerometer[1];
-   		  arrayIndex++;
-   		  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
-   		  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
-   		  startedMoving = 1;
-   		}
-   	  }
-    if (resultIndex == NUMBER_OF_DIRECTION){
-    	 res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTION);
-    	 if (res == 0){
-    		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
-    	 }else{
-    		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
-    		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
-    	 }
-    	 resultIndex++;
-    	 //directionResult[NUMBER_OF_DIRECTION] = '\000';
-    }
-  }
-  /* USER CODE END StartAcceleroSensor */
-}
+//void StartAcceleroSensor(void const * argument)
+//{
+//  /* USER CODE BEGIN StartAcceleroSensor */
+//  BSP_ACCELERO_Init();
+//  /* Infinite loop */
+//  for(;;)
+//  {
+//    osDelay(1);
+//    if(player && directionGame && !counterInitial) {
+//    	  osDelay(10000);
+//   		  BSP_ACCELERO_AccGetXYZ(accelerometer);
+//   		  acc_x1 = accelerometer[0];
+//   		  acc_y1 = accelerometer[1];
+//   		  counterInitial++;
+//   	  }
+//    if(player && directionGame && (resultIndex < NUMBER_OF_DIRECTION)) {
+//   		BSP_ACCELERO_AccGetXYZ(accelerometer);
+//   		if(accelerometer[0]- acc_x1  > MOVEMENT_THRESHOLD || accelerometer[1] - acc_y1 > MOVEMENT_THRESHOLD) {
+//   		  arrayX[arrayIndex] = (float32_t) accelerometer[0];
+//   		  arrayY[arrayIndex] = (float32_t) accelerometer[1];
+//   		  arrayIndex++;
+//   		  arm_max_f32(&arrayX, (uint32_t) 2000,  &maxX2,  &maxIndexX);
+//   		  arm_max_f32(&arrayY, (uint32_t) 2000,  &maxY2,  &maxIndexY);
+//   		  startedMoving = 1;
+//   		}
+//   	  }
+//    if (resultIndex == NUMBER_OF_DIRECTION){
+//    	 res= strncmp(directionResult, seqDirections, NUMBER_OF_DIRECTION);
+//    	 if (res == 0){
+//    		  HAL_UART_Transmit(&huart1, winMessage, sizeof(winMessage), 100);
+//    	 }else{
+//    		  HAL_UART_Transmit(&huart1, lossMessage, sizeof(lossMessage), 100);
+//    		  HAL_UART_Transmit(&huart1, seqDirections, sizeof(seqDirections), 100);
+//    	 }
+//    	 resultIndex++;
+//    	 //directionResult[NUMBER_OF_DIRECTION] = '\000';
+//    }
+//  }
+//  /* USER CODE END StartAcceleroSensor */
+//}
 
 /* USER CODE BEGIN Header_StartCounterDirGame */
 /**
@@ -1102,20 +1163,20 @@ void StartAcceleroSensor(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartCounterDirGame */
-void StartCounterDirGame(void const * argument)
-{
-  /* USER CODE BEGIN StartCounterDirGame */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-    if(startedMoving) {
-    	osDelay(100);
-    	counterRestart++;
-    }
-  }
-  /* USER CODE END StartCounterDirGame */
-}
+//void StartCounterDirGame(void const * argument)
+//{
+//  /* USER CODE BEGIN StartCounterDirGame */
+//  /* Infinite loop */
+//  for(;;)
+//  {
+//    osDelay(1);
+//    if(startedMoving) {
+//    	osDelay(100);
+//    	counterRestart++;
+//    }
+//  }
+//  /* USER CODE END StartCounterDirGame */
+//}
 
 /**
   * @brief  This function is executed in case of error occurrence.
